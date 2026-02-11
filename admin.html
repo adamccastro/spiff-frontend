@@ -538,7 +538,7 @@
         }
 
         // Agent management
-        async function addAgent() {
+        async function addAgent(force = false) {
             const name = document.getElementById('newAgentName').value.trim();
             const ssn = document.getElementById('newAgentSSN').value.trim();
 
@@ -554,12 +554,27 @@
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${authToken}`
                     },
-                    body: JSON.stringify({ name, ssn })
+                    body: JSON.stringify({ name, ssn, force })
                 });
 
                 const data = await response.json();
 
                 if (!response.ok) {
+                    // Check if it's a duplicate warning (can be overridden)
+                    if (response.status === 409 && data.warning && data.existingAgent) {
+                        const confirmAdd = confirm(
+                            `⚠️ An agent with this SSN already exists:\n\n` +
+                            `Name: ${data.existingAgent.name}\n` +
+                            `Location: ${data.existingAgent.location}\n\n` +
+                            `Do you want to add this agent anyway?`
+                        );
+                        
+                        if (confirmAdd) {
+                            // Re-submit with force flag
+                            return addAgent(true);
+                        }
+                        return;
+                    }
                     throw new Error(data.error || 'Failed to add agent');
                 }
 
