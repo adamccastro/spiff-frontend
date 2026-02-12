@@ -226,7 +226,26 @@
             font-family: monospace;
         }
         
-        .remove-agent-btn {
+        .agent-actions {
+            display: flex;
+            gap: 6px;
+        }
+
+        .archive-agent-btn {
+            background: #ffa502;
+            color: white;
+            padding: 4px 10px;
+            font-size: 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .archive-agent-btn:hover {
+            background: #e69500;
+        }
+
+        .delete-agent-btn {
             background: #ff4757;
             color: white;
             padding: 4px 10px;
@@ -236,7 +255,7 @@
             cursor: pointer;
         }
         
-        .remove-agent-btn:hover {
+        .delete-agent-btn:hover {
             background: #ee2f3c;
         }
 
@@ -641,13 +660,39 @@
                         <div class="agent-name">${agent.name}</div>
                         <div class="agent-ssn">${maskSSN(agent.ssn)}</div>
                     </div>
-                    <button class="remove-agent-btn" onclick="removeAgent('${agent.id}')">Remove</button>
+                    <div class="agent-actions">
+                        <button class="archive-agent-btn" onclick="archiveAgent('${agent.id}')">Archive</button>
+                        <button class="delete-agent-btn" onclick="deleteAgent('${agent.id}')">Delete</button>
+                    </div>
                 </div>
             `).join('');
         }
 
-        async function removeAgent(id) {
-            if (!confirm('Remove this agent? Their payment history will remain.')) return;
+        async function archiveAgent(id) {
+            if (!confirm('Archive this agent? They will be hidden from the active list but can be restored later.')) return;
+
+            try {
+                const response = await fetch(`${API_URL}/agents/${id}/archive`, {
+                    method: 'PUT',
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to archive agent');
+                }
+
+                loadAgents();
+                loadStats();
+                showAlert('Agent archived successfully');
+            } catch (error) {
+                showAlert(error.message, 'error');
+            }
+        }
+
+        async function deleteAgent(id) {
+            if (!confirm('⚠️ PERMANENTLY DELETE this agent?\n\nThis cannot be undone. Their payment history will remain but they will be removed from the system entirely.\n\nAre you sure?')) return;
 
             try {
                 const response = await fetch(`${API_URL}/agents/${id}`, {
@@ -658,12 +703,12 @@
                 const data = await response.json();
 
                 if (!response.ok) {
-                    throw new Error(data.error || 'Failed to remove agent');
+                    throw new Error(data.error || 'Failed to delete agent');
                 }
 
                 loadAgents();
                 loadStats();
-                showAlert('Agent removed successfully');
+                showAlert('Agent permanently deleted');
             } catch (error) {
                 showAlert(error.message, 'error');
             }
