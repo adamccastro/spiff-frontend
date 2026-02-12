@@ -259,6 +259,54 @@
             background: #ee2f3c;
         }
 
+        .collapsible-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .collapsible-header h2 {
+            margin-bottom: 0;
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .collapse-toggle {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .collapse-toggle:hover {
+            background: #5568d3;
+        }
+
+        .collapsible-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+
+        .collapsible-content.expanded {
+            max-height: 5000px;
+            transition: max-height 0.5s ease-in;
+        }
+
+        .records-summary {
+            padding: 15px 0;
+            color: #666;
+            font-size: 0.95em;
+            border-top: 2px solid #667eea;
+            margin-top: 15px;
+        }
+
         .stat-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -428,15 +476,23 @@
             </div>
             
             <div class="card full-width">
-                <h2>Payment Records</h2>
-                
-                <div class="export-controls">
-                    <button class="btn-primary" onclick="exportToCSV()">Export to CSV</button>
-                    <button class="btn-secondary" onclick="clearAllRecords()">Clear All Records</button>
-                    <button class="btn-secondary" onclick="changePassword()">Change Password</button>
+                <div class="collapsible-header" onclick="togglePaymentRecords()">
+                    <h2>📋 Payment Records</h2>
+                    <button class="collapse-toggle" id="collapseBtn">▼ Show Records</button>
                 </div>
                 
-                <table class="records-table">
+                <div class="records-summary" id="recordsSummary">
+                    Click to expand and view all payment records
+                </div>
+                
+                <div class="collapsible-content" id="paymentRecordsContent">
+                    <div class="export-controls">
+                        <button class="btn-primary" onclick="exportToCSV()">Export to CSV</button>
+                        <button class="btn-secondary" onclick="clearAllRecords()">Clear All Records</button>
+                        <button class="btn-secondary" onclick="changePassword()">Change Password</button>
+                    </div>
+                    
+                    <table class="records-table">
                     <thead>
                         <tr>
                             <th>Date</th>
@@ -452,7 +508,8 @@
                             <td colspan="6" class="loading">Loading records...</td>
                         </tr>
                     </tbody>
-                </table>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
@@ -736,9 +793,15 @@
 
         function displayPayments(payments) {
             const tbody = document.getElementById('recordsTableBody');
+            const summary = document.getElementById('recordsSummary');
+            
+            // Update summary
+            const total = payments.reduce((sum, p) => sum + parseFloat(p.amount), 0);
+            summary.innerHTML = `<strong>${payments.length}</strong> payment records totaling <strong>$${total.toFixed(2)}</strong> — Click to expand`;
             
             if (payments.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #999;">No records yet</td></tr>';
+                summary.innerHTML = 'No payment records yet';
                 return;
             }
             
@@ -854,6 +917,23 @@
                 showAlert('Records exported successfully!');
             } catch (error) {
                 showAlert('Error exporting records', 'error');
+            }
+        }
+
+        // Toggle payment records section
+        function togglePaymentRecords() {
+            const content = document.getElementById('paymentRecordsContent');
+            const btn = document.getElementById('collapseBtn');
+            const summary = document.getElementById('recordsSummary');
+            
+            if (content.classList.contains('expanded')) {
+                content.classList.remove('expanded');
+                btn.textContent = '▼ Show Records';
+                summary.style.display = 'block';
+            } else {
+                content.classList.add('expanded');
+                btn.textContent = '▲ Hide Records';
+                summary.style.display = 'none';
             }
         }
 
