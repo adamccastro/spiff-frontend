@@ -480,7 +480,11 @@
 
                 authToken = data.token;
                 localStorage.setItem('authToken', authToken);
+                if (data.user) {
+                    localStorage.setItem('userInfo', JSON.stringify(data.user));
+                }
                 showDashboard();
+                updateBranding();
                 loadAllData();
             } catch (error) {
                 showAlert(error.message, 'error', 'loginAlert');
@@ -490,7 +494,22 @@
         function logout() {
             authToken = null;
             localStorage.removeItem('authToken');
+            localStorage.removeItem('userInfo');
             showLogin();
+        }
+
+        function updateBranding() {
+            try {
+                const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
+                const displayName = userInfo.display_name || 'Spiff Tracker';
+                const locationName = userInfo.role === 'super_admin' ? 'All Locations' : (userInfo.location_name || '');
+                
+                document.querySelector('.header h1').textContent = '💰 ' + displayName + ' - Admin Dashboard';
+                document.querySelector('.header p').textContent = locationName ? locationName + ' — Manage agents and view payment reports' : 'Manage agents and view payment reports';
+                document.title = displayName + ' - Admin Dashboard';
+            } catch (e) {
+                // Ignore — use defaults
+            }
         }
 
         function showLogin() {
@@ -804,6 +823,7 @@
             if (token) {
                 authToken = token;
                 showDashboard();
+                updateBranding();
                 loadAllData();
             } else {
                 showLogin();

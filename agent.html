@@ -234,6 +234,33 @@
             border-color: #10ac84;
         }
 
+        .location-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .location-list li {
+            margin-bottom: 12px;
+        }
+
+        .location-list a {
+            display: block;
+            padding: 18px 24px;
+            background: linear-gradient(135deg, #10ac84 0%, #1dd1a1 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 10px;
+            font-size: 1.2em;
+            font-weight: 600;
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .location-list a:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(16, 172, 132, 0.4);
+        }
+
         @media (max-width: 600px) {
             .card {
                 padding: 25px;
@@ -252,10 +279,21 @@
 <body>
     <div class="container">
         <div class="card">
-            <div id="signForm">
+            <!-- Location Picker (shown when no ?location= param) -->
+            <div id="locationPicker" style="display: none;">
                 <div class="header">
                     <div class="icon">💰</div>
                     <h1>Spiff Payment</h1>
+                    <p>Select your location</p>
+                </div>
+                <div id="locationList" class="loading">Loading locations...</div>
+            </div>
+
+            <!-- Sign Form (shown when location is set) -->
+            <div id="signForm" style="display: none;">
+                <div class="header">
+                    <div class="icon">💰</div>
+                    <h1 id="appTitle">Spiff Payment</h1>
                     <p>Sign to acknowledge receipt</p>
                 </div>
                 
@@ -303,25 +341,30 @@
     </div>
 
     <script>
-        // Configuration - UPDATE THIS WITH YOUR BACKEND URL
+        // Configuration
         const API_URL = 'https://spiff-backend.onrender.com/api';
         
+        // Get location from URL params
+        const urlParams = new URLSearchParams(window.location.search);
+        const locationId = urlParams.get('location');
+        
         // Signature pad setup
-        const canvas = document.getElementById('signaturePad');
-        const ctx = canvas.getContext('2d');
+        let canvas, ctx;
         let isDrawing = false;
         let hasSignature = false;
-        
-        // Mouse events
-        canvas.addEventListener('mousedown', startDrawing);
-        canvas.addEventListener('mousemove', draw);
-        canvas.addEventListener('mouseup', stopDrawing);
-        canvas.addEventListener('mouseout', stopDrawing);
-        
-        // Touch events
-        canvas.addEventListener('touchstart', handleTouchStart);
-        canvas.addEventListener('touchmove', handleTouchMove);
-        canvas.addEventListener('touchend', stopDrawing);
+
+        function initSignaturePad() {
+            canvas = document.getElementById('signaturePad');
+            ctx = canvas.getContext('2d');
+            
+            canvas.addEventListener('mousedown', startDrawing);
+            canvas.addEventListener('mousemove', draw);
+            canvas.addEventListener('mouseup', stopDrawing);
+            canvas.addEventListener('mouseout', stopDrawing);
+            canvas.addEventListener('touchstart', handleTouchStart);
+            canvas.addEventListener('touchmove', handleTouchMove);
+            canvas.addEventListener('touchend', stopDrawing);
+        }
         
         function startDrawing(e) {
             isDrawing = true;
@@ -378,11 +421,57 @@
             const btn = document.getElementById('submitBtn');
             btn.disabled = !(hasSignature && amount > 0);
         }
+
+        // Load location info and set display name
+        async function loadLocationInfo(locId) {
+            try {
+                const response = await fetch(`${API_URL}/locations`);
+                const locations = await response.json();
+                const location = locations.find(l => l.id == locId);
+                
+                if (location) {
+                    const displayName = location.display_name || 'Spiff Payment';
+                    document.getElementById('appTitle').textContent = displayName;
+                    document.title = `${displayName} - Agent Sign-In`;
+                }
+            } catch (error) {
+                console.error('Error loading location info:', error);
+            }
+        }
+
+        // Show location picker
+        async function showLocationPicker() {
+            document.getElementById('locationPicker').style.display = 'block';
+            
+            try {
+                const response = await fetch(`${API_URL}/locations`);
+                const locations = await response.json();
+                
+                if (locations.length === 0) {
+                    document.getElementById('locationList').innerHTML = '<p style="color: #999; text-align: center;">No locations available.</p>';
+                    return;
+                }
+
+                const listHtml = '<ul class="location-list">' + 
+                    locations.map(loc => 
+                        `<li><a href="?location=${loc.id}">${loc.display_name || loc.name}</a></li>`
+                    ).join('') + '</ul>';
+                
+                document.getElementById('locationList').innerHTML = listHtml;
+            } catch (error) {
+                document.getElementById('locationList').innerHTML = '<p style="color: #ff4757;">Error loading locations: ' + error.message + '</p>';
+            }
+        }
         
-        // Load agents
+        // Load agents (filtered by location)
         async function loadAgents() {
             try {
-                const response = await fetch(`${API_URL}/agents`);
+                let url = `${API_URL}/agents`;
+                if (locationId) {
+                    url += `?locationId=${locationId}`;
+                }
+                
+                const response = await fetch(url);
                 const agents = await response.json();
 
                 if (!response.ok) {
@@ -445,10 +534,7 @@
                 return;
             }
 
-            // Get signature as data URL
             const signatureData = canvas.toDataURL();
-            
-            // Get today's date
             const today = new Date().toISOString().split('T')[0];
 
             try {
@@ -469,7 +555,6 @@
                     throw new Error(data.error || 'Failed to submit payment');
                 }
 
-                // Show success
                 document.getElementById('confirmedAmount').textContent = '$' + amount.toFixed(2);
                 document.getElementById('signForm').style.display = 'none';
                 document.getElementById('successMessage').style.display = 'block';
@@ -489,7 +574,16 @@
 
         // Initialize
         window.addEventListener('DOMContentLoaded', () => {
-            loadAgents();
+            if (locationId) {
+                // Location specified — show sign form
+                document.getElementById('signForm').style.display = 'block';
+                initSignaturePad();
+                loadLocationInfo(locationId);
+                loadAgents();
+            } else {
+                // No location — show picker
+                showLocationPicker();
+            }
         });
     </script>
 </body>
