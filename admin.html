@@ -550,7 +550,10 @@
                     <h1>💰 Spiff Tracker - Admin Dashboard</h1>
                     <p>Manage agents and view payment reports</p>
                 </div>
-                <button class="btn-secondary" onclick="logout()">Logout</button>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn-secondary" onclick="changePassword()">🔑 Change Password</button>
+                    <button class="btn-secondary" onclick="logout()">Logout</button>
+                </div>
             </div>
             
             <div id="alert" class="alert"></div>
@@ -573,6 +576,21 @@
                     
                     <div style="margin-top: 25px;">
                         <h3 style="margin-bottom: 15px; color: #333;">Current Agents</h3>
+                        
+                        <!-- Location Filter (Super Admin Only) -->
+                        <div id="agentFilterControls" style="display: none; margin-bottom: 15px;">
+                            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                                <select id="agentLocationFilter" onchange="filterAgents()" style="padding: 8px 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px;">
+                                    <option value="">All Locations</option>
+                                </select>
+                                <select id="agentSortOrder" onchange="filterAgents()" style="padding: 8px 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px;">
+                                    <option value="location">Sort by Location</option>
+                                    <option value="name">Sort by Name</option>
+                                </select>
+                                <span id="agentFilterCount" style="color: #666; font-size: 0.9em;"></span>
+                            </div>
+                        </div>
+                        
                         <div id="agentList" class="loading">Loading agents...</div>
                     </div>
                 </div>
@@ -685,6 +703,7 @@
         const API_URL = 'https://spiff-backend.onrender.com/api';
         
         let authToken = null;
+        let allAgents = []; // Store full agent list for filtering
 
         // Format SSN as user types
         document.getElementById('newAgentSSN').addEventListener('input', function(e) {
@@ -862,11 +881,77 @@
                     throw new Error(agents.error || 'Failed to load agents');
                 }
 
-                displayAgents(agents);
+                allAgents = agents; // Store for filtering
+                setupAgentFilters();
+                filterAgents(); // Apply current filter/sort
             } catch (error) {
                 document.getElementById('agentList').innerHTML = 
                     `<p style="color: #ff4757;">Error loading agents: ${error.message}</p>`;
             }
+        }
+
+        function setupAgentFilters() {
+            const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
+            const isSuperAdmin = userInfo.role === 'super_admin';
+            
+            const filterControls = document.getElementById('agentFilterControls');
+            
+            if (isSuperAdmin && allAgents.length > 0) {
+                filterControls.style.display = 'block';
+                
+                // Get unique locations from agents
+                const locations = [...new Set(allAgents.map(a => JSON.stringify({ id: a.location_id, name: a.location_name })))]
+                    .map(s => JSON.parse(s))
+                    .sort((a, b) => a.name.localeCompare(b.name));
+                
+                const select = document.getElementById('agentLocationFilter');
+                const currentValue = select.value;
+                
+                select.innerHTML = '<option value="">All Locations</option>' +
+                    locations.map(loc => `<option value="${loc.id}">${loc.name}</option>`).join('');
+                
+                // Restore previous selection if still valid
+                if (currentValue && locations.some(l => l.id === currentValue)) {
+                    select.value = currentValue;
+                }
+            } else {
+                filterControls.style.display = 'none';
+            }
+        }
+
+        function filterAgents() {
+            const locationFilter = document.getElementById('agentLocationFilter')?.value || '';
+            const sortOrder = document.getElementById('agentSortOrder')?.value || 'location';
+            
+            let filtered = [...allAgents];
+            
+            // Apply location filter
+            if (locationFilter) {
+                filtered = filtered.filter(a => a.location_id === locationFilter);
+            }
+            
+            // Apply sort
+            if (sortOrder === 'name') {
+                filtered.sort((a, b) => a.name.localeCompare(b.name));
+            } else {
+                // Sort by location, then name
+                filtered.sort((a, b) => {
+                    const locCompare = (a.location_name || '').localeCompare(b.location_name || '');
+                    return locCompare !== 0 ? locCompare : a.name.localeCompare(b.name);
+                });
+            }
+            
+            // Update count
+            const countEl = document.getElementById('agentFilterCount');
+            if (countEl) {
+                if (locationFilter) {
+                    countEl.textContent = `Showing ${filtered.length} of ${allAgents.length} agents`;
+                } else {
+                    countEl.textContent = `${filtered.length} agents`;
+                }
+            }
+            
+            displayAgents(filtered);
         }
 
         function displayAgents(agents) {
