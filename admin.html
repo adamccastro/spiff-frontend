@@ -259,6 +259,20 @@
             background: #ee2f3c;
         }
 
+        .move-agent-btn {
+            background: #3498db;
+            color: white;
+            padding: 4px 10px;
+            font-size: 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .move-agent-btn:hover {
+            background: #2980b9;
+        }
+
         .collapsible-header {
             display: flex;
             justify-content: space-between;
@@ -305,6 +319,53 @@
             font-size: 0.95em;
             border-top: 2px solid #667eea;
             margin-top: 15px;
+        }
+
+        .admin-user-item {
+            padding: 12px;
+            background: #f9f9f9;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .admin-user-item:hover {
+            background: #f0f0f0;
+        }
+
+        .admin-user-info {
+            flex: 1;
+        }
+
+        .admin-user-name {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .admin-user-location {
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .admin-user-meta {
+            font-size: 0.8em;
+            color: #999;
+        }
+
+        .reset-pwd-btn {
+            background: #667eea;
+            color: white;
+            padding: 6px 12px;
+            font-size: 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .reset-pwd-btn:hover {
+            background: #5568d3;
         }
 
         .stat-grid {
@@ -384,6 +445,81 @@
         .total-box .amount {
             font-size: 2.5em;
             font-weight: bold;
+        }
+
+        /* Modal styles */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .modal h3 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .modal select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .modal-buttons button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .modal-cancel {
+            background: #e0e0e0;
+            color: #333;
+        }
+
+        .modal-confirm {
+            background: #3498db;
+            color: white;
+        }
+
+        .modal-confirm:hover {
+            background: #2980b9;
+        }
+
+        .agent-location {
+            font-size: 0.8em;
+            color: #888;
+            margin-top: 2px;
         }
     </style>
 </head>
@@ -510,6 +646,36 @@
                     </tbody>
                     </table>
                 </div>
+            </div>
+            
+            <!-- Admin Users Management (Super Admin Only) -->
+            <div class="card full-width" id="adminUsersSection" style="display: none;">
+                <div class="collapsible-header" onclick="toggleAdminUsers()">
+                    <h2>👥 Location Admin Accounts</h2>
+                    <button class="collapse-toggle" id="adminUsersCollapseBtn">▼ Show Admins</button>
+                </div>
+                
+                <div class="records-summary" id="adminUsersSummary">
+                    Manage location admin passwords
+                </div>
+                
+                <div class="collapsible-content" id="adminUsersContent">
+                    <div id="adminUsersList" class="loading">Loading admin users...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Move Agent Modal -->
+    <div class="modal-overlay" id="moveAgentModal">
+        <div class="modal">
+            <h3>📍 Move Agent to Different Location</h3>
+            <p id="moveAgentName" style="margin-bottom: 15px; color: #666;"></p>
+            <label for="moveLocationSelect">Select new location:</label>
+            <select id="moveLocationSelect"></select>
+            <div class="modal-buttons">
+                <button class="modal-cancel" onclick="closeMoveModal()">Cancel</button>
+                <button class="modal-confirm" onclick="confirmMoveAgent()">Move Agent</button>
             </div>
         </div>
     </div>
@@ -705,6 +871,8 @@
 
         function displayAgents(agents) {
             const container = document.getElementById('agentList');
+            const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
+            const isSuperAdmin = userInfo.role === 'super_admin';
             
             if (agents.length === 0) {
                 container.innerHTML = '<p style="color: #999; text-align: center; padding: 20px;">No agents added yet</p>';
@@ -716,8 +884,10 @@
                     <div class="agent-info">
                         <div class="agent-name">${agent.name}</div>
                         <div class="agent-ssn">${maskSSN(agent.ssn)}</div>
+                        ${isSuperAdmin && agent.location_name ? `<div class="agent-location">📍 ${agent.location_name}</div>` : ''}
                     </div>
                     <div class="agent-actions">
+                        ${isSuperAdmin ? `<button class="move-agent-btn" onclick="openMoveModal('${agent.id}', '${agent.name.replace(/'/g, "\\'")}', '${agent.location_id}')">Move</button>` : ''}
                         <button class="archive-agent-btn" onclick="archiveAgent('${agent.id}')">Archive</button>
                         <button class="delete-agent-btn" onclick="deleteAgent('${agent.id}')">Delete</button>
                     </div>
@@ -766,6 +936,65 @@
                 loadAgents();
                 loadStats();
                 showAlert('Agent permanently deleted');
+            } catch (error) {
+                showAlert(error.message, 'error');
+            }
+        }
+
+        // Move agent (super admin only)
+        let moveAgentId = null;
+        let allLocations = [];
+
+        async function loadLocations() {
+            try {
+                const response = await fetch(`${API_URL}/locations`);
+                allLocations = await response.json();
+            } catch (error) {
+                console.error('Failed to load locations:', error);
+            }
+        }
+
+        function openMoveModal(agentId, agentName, currentLocationId) {
+            moveAgentId = agentId;
+            document.getElementById('moveAgentName').textContent = `Moving: ${agentName}`;
+            
+            const select = document.getElementById('moveLocationSelect');
+            select.innerHTML = allLocations.map(loc => 
+                `<option value="${loc.id}" ${loc.id === currentLocationId ? 'selected' : ''}>${loc.name}</option>`
+            ).join('');
+            
+            document.getElementById('moveAgentModal').classList.add('active');
+        }
+
+        function closeMoveModal() {
+            moveAgentId = null;
+            document.getElementById('moveAgentModal').classList.remove('active');
+        }
+
+        async function confirmMoveAgent() {
+            if (!moveAgentId) return;
+            
+            const newLocationId = document.getElementById('moveLocationSelect').value;
+            
+            try {
+                const response = await fetch(`${API_URL}/agents/${moveAgentId}/location`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ locationId: newLocationId })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to move agent');
+                }
+
+                closeMoveModal();
+                loadAgents();
+                showAlert(`Agent moved to ${data.newLocation} successfully!`);
             } catch (error) {
                 showAlert(error.message, 'error');
             }
@@ -920,6 +1149,106 @@
             }
         }
 
+        // Toggle admin users section
+        function toggleAdminUsers() {
+            const content = document.getElementById('adminUsersContent');
+            const btn = document.getElementById('adminUsersCollapseBtn');
+            const summary = document.getElementById('adminUsersSummary');
+            
+            if (content.classList.contains('expanded')) {
+                content.classList.remove('expanded');
+                btn.textContent = '▼ Show Admins';
+                summary.style.display = 'block';
+            } else {
+                content.classList.add('expanded');
+                btn.textContent = '▲ Hide Admins';
+                summary.style.display = 'none';
+            }
+        }
+
+        // Load admin users (super admin only)
+        async function loadAdminUsers() {
+            try {
+                const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
+                if (userInfo.role !== 'super_admin') {
+                    document.getElementById('adminUsersSection').style.display = 'none';
+                    return;
+                }
+
+                document.getElementById('adminUsersSection').style.display = 'block';
+
+                const response = await fetch(`${API_URL}/admin/users`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                const users = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(users.error || 'Failed to load admin users');
+                }
+
+                displayAdminUsers(users);
+            } catch (error) {
+                document.getElementById('adminUsersList').innerHTML = 
+                    `<p style="color: #ff4757;">Error loading admin users: ${error.message}</p>`;
+            }
+        }
+
+        function displayAdminUsers(users) {
+            const container = document.getElementById('adminUsersList');
+            const locationAdmins = users.filter(u => u.role === 'location_admin');
+            
+            document.getElementById('adminUsersSummary').innerHTML = 
+                `<strong>${locationAdmins.length}</strong> location admin accounts — Click to manage`;
+
+            if (locationAdmins.length === 0) {
+                container.innerHTML = '<p style="color: #999; text-align: center;">No location admins yet</p>';
+                return;
+            }
+
+            container.innerHTML = locationAdmins.map(user => `
+                <div class="admin-user-item">
+                    <div class="admin-user-info">
+                        <div class="admin-user-name">${user.username}</div>
+                        <div class="admin-user-location">${user.location_name || 'No location'}</div>
+                        <div class="admin-user-meta">Last login: ${user.last_login ? new Date(user.last_login).toLocaleString() : 'Never'}</div>
+                    </div>
+                    <button class="reset-pwd-btn" onclick="resetAdminPassword('${user.id}', '${user.username}')">Reset Password</button>
+                </div>
+            `).join('');
+        }
+
+        async function resetAdminPassword(userId, username) {
+            const newPassword = prompt(\`Enter new password for "\${username}" (min 6 characters):\`);
+            if (!newPassword) return;
+
+            if (newPassword.length < 6) {
+                showAlert('Password must be at least 6 characters', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/admin/users/${userId}/reset-password`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({ newPassword })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to reset password');
+                }
+
+                showAlert(`Password reset for ${username}!`);
+            } catch (error) {
+                showAlert(error.message, 'error');
+            }
+        }
+
         // Toggle payment records section
         function togglePaymentRecords() {
             const content = document.getElementById('paymentRecordsContent');
@@ -952,9 +1281,11 @@
         }
 
         function loadAllData() {
+            loadLocations(); // For move agent feature
             loadAgents();
             loadPayments();
             loadStats();
+            loadAdminUsers();
         }
 
         // Initialize
