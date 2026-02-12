@@ -344,9 +344,33 @@
         // Configuration
         const API_URL = 'https://spiff-backend.onrender.com/api';
         
-        // Get location from URL params
+        // Get location from URL params (supports both UUID and name)
         const urlParams = new URLSearchParams(window.location.search);
-        const locationId = urlParams.get('location');
+        let locationId = urlParams.get('location');
+        
+        // Helper to check if string is a UUID
+        function isUUID(str) {
+            return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+        }
+        
+        // Resolve location name to UUID if needed
+        async function resolveLocationId(locParam) {
+            if (!locParam) return null;
+            if (isUUID(locParam)) return locParam;
+            
+            // It's a name, look up the UUID
+            try {
+                const response = await fetch(`${API_URL}/locations`);
+                const locations = await response.json();
+                const location = locations.find(l => 
+                    l.name.toLowerCase() === locParam.toLowerCase()
+                );
+                return location ? location.id : null;
+            } catch (error) {
+                console.error('Error resolving location:', error);
+                return null;
+            }
+        }
         
         // Signature pad setup
         let canvas, ctx;
@@ -573,13 +597,22 @@
         }
 
         // Initialize
-        window.addEventListener('DOMContentLoaded', () => {
+        window.addEventListener('DOMContentLoaded', async () => {
             if (locationId) {
-                // Location specified — show sign form
-                document.getElementById('signForm').style.display = 'block';
-                initSignaturePad();
-                loadLocationInfo(locationId);
-                loadAgents();
+                // Resolve location name to UUID if needed
+                locationId = await resolveLocationId(locationId);
+                
+                if (locationId) {
+                    // Location found — show sign form
+                    document.getElementById('signForm').style.display = 'block';
+                    initSignaturePad();
+                    loadLocationInfo(locationId);
+                    loadAgents();
+                } else {
+                    // Location not found — show error
+                    showAlert('Location not found. Please select from the list.', 'error');
+                    showLocationPicker();
+                }
             } else {
                 // No location — show picker
                 showLocationPicker();
