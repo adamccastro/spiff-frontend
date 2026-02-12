@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Spiff Tracker - Admin Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         * {
             margin: 0;
@@ -84,7 +85,9 @@
         
         input[type="text"],
         input[type="password"],
-        input[type="number"] {
+        input[type="number"],
+        input[type="date"],
+        select {
             width: 100%;
             padding: 12px;
             border: 2px solid #e0e0e0;
@@ -93,7 +96,7 @@
             transition: border-color 0.3s;
         }
         
-        input:focus {
+        input:focus, select:focus {
             outline: none;
             border-color: #667eea;
         }
@@ -127,6 +130,15 @@
         
         .btn-secondary:hover {
             background: #d0d0d0;
+        }
+        
+        .btn-success {
+            background: #10ac84;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #0d8a6a;
         }
         
         .records-table {
@@ -273,6 +285,20 @@
             background: #2980b9;
         }
 
+        .restore-btn {
+            background: #10ac84;
+            color: white;
+            padding: 4px 10px;
+            font-size: 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .restore-btn:hover {
+            background: #0d8a6a;
+        }
+
         .collapsible-header {
             display: flex;
             justify-content: space-between;
@@ -321,7 +347,7 @@
             margin-top: 15px;
         }
 
-        .admin-user-item {
+        .admin-user-item, .location-item {
             padding: 12px;
             background: #f9f9f9;
             border-radius: 6px;
@@ -331,25 +357,25 @@
             align-items: center;
         }
 
-        .admin-user-item:hover {
+        .admin-user-item:hover, .location-item:hover {
             background: #f0f0f0;
         }
 
-        .admin-user-info {
+        .admin-user-info, .location-info {
             flex: 1;
         }
 
-        .admin-user-name {
+        .admin-user-name, .location-name {
             font-weight: 600;
             color: #333;
         }
 
-        .admin-user-location {
+        .admin-user-location, .location-address {
             font-size: 0.9em;
             color: #666;
         }
 
-        .admin-user-meta {
+        .admin-user-meta, .location-meta {
             font-size: 0.8em;
             color: #999;
         }
@@ -420,6 +446,7 @@
             display: flex;
             gap: 10px;
             margin-top: 20px;
+            flex-wrap: wrap;
         }
 
         .loading {
@@ -469,9 +496,11 @@
             background: white;
             padding: 30px;
             border-radius: 10px;
-            max-width: 400px;
+            max-width: 500px;
             width: 90%;
             box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            max-height: 90vh;
+            overflow-y: auto;
         }
 
         .modal h3 {
@@ -521,6 +550,148 @@
             color: #888;
             margin-top: 2px;
         }
+
+        /* Pay Summary Table */
+        .pay-summary-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9em;
+        }
+
+        .pay-summary-table th,
+        .pay-summary-table td {
+            padding: 10px 8px;
+            text-align: right;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .pay-summary-table th:first-child,
+        .pay-summary-table td:first-child {
+            text-align: left;
+        }
+
+        .pay-summary-table th {
+            background: #f5f5f5;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .pay-summary-table tr:hover {
+            background: #fafafa;
+        }
+
+        .pay-summary-table .total-row {
+            font-weight: bold;
+            background: #f0f0f0;
+        }
+
+        /* Date filter */
+        .date-filter {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 6px;
+        }
+
+        .date-filter label {
+            margin-bottom: 0;
+            font-weight: normal;
+        }
+
+        .date-filter input[type="date"] {
+            width: auto;
+            padding: 8px 12px;
+        }
+
+        .date-filter button {
+            padding: 8px 16px;
+            font-size: 14px;
+        }
+
+        /* Chart container */
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-top: 20px;
+        }
+
+        /* Tabs */
+        .tab-buttons {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 0;
+        }
+
+        .tab-btn {
+            padding: 10px 20px;
+            background: transparent;
+            border: none;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            font-size: 14px;
+            color: #666;
+            margin-bottom: -2px;
+        }
+
+        .tab-btn:hover {
+            color: #667eea;
+        }
+
+        .tab-btn.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+            font-weight: 600;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Form row */
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        @media (max-width: 600px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Inline form */
+        .inline-form {
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+            flex-wrap: wrap;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 6px;
+            margin-bottom: 15px;
+        }
+
+        .inline-form .form-group {
+            margin-bottom: 0;
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .inline-form button {
+            padding: 12px 20px;
+            white-space: nowrap;
+        }
     </style>
 </head>
 <body>
@@ -559,44 +730,63 @@
             <div id="alert" class="alert"></div>
             
             <div class="main-content">
+                <!-- Left Column: Agent Management -->
                 <div class="card">
-                    <h2>Add New Agent</h2>
+                    <h2>👥 Agent Management</h2>
                     
-                    <div class="form-group">
-                        <label for="newAgentName">Agent Name</label>
-                        <input type="text" id="newAgentName" placeholder="Enter agent name">
+                    <div class="tab-buttons">
+                        <button class="tab-btn active" onclick="showAgentTab('active')">Active Agents</button>
+                        <button class="tab-btn" onclick="showAgentTab('archived')">Archived</button>
+                        <button class="tab-btn" onclick="showAgentTab('add')">+ Add New</button>
                     </div>
                     
-                    <div class="form-group">
-                        <label for="newAgentSSN">Social Security Number</label>
-                        <input type="text" id="newAgentSSN" placeholder="XXX-XX-XXXX" maxlength="11">
-                    </div>
-                    
-                    <button class="btn-primary" onclick="addAgent()">Add Agent to Roster</button>
-                    
-                    <div style="margin-top: 25px;">
-                        <h3 style="margin-bottom: 15px; color: #333;">Current Agents</h3>
-                        
+                    <!-- Active Agents Tab -->
+                    <div id="activeAgentsTab" class="tab-content active">
                         <!-- Location Filter (Super Admin Only) -->
                         <div id="agentFilterControls" style="display: none; margin-bottom: 15px;">
                             <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                                <select id="agentLocationFilter" onchange="filterAgents()" style="padding: 8px 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px;">
+                                <select id="agentLocationFilter" onchange="filterAgents()" style="padding: 8px 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px; width: auto;">
                                     <option value="">All Locations</option>
                                 </select>
-                                <select id="agentSortOrder" onchange="filterAgents()" style="padding: 8px 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px;">
+                                <select id="agentSortOrder" onchange="filterAgents()" style="padding: 8px 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px; width: auto;">
                                     <option value="location">Sort by Location</option>
                                     <option value="name">Sort by Name</option>
                                 </select>
                                 <span id="agentFilterCount" style="color: #666; font-size: 0.9em;"></span>
                             </div>
                         </div>
-                        
                         <div id="agentList" class="loading">Loading agents...</div>
+                    </div>
+                    
+                    <!-- Archived Agents Tab -->
+                    <div id="archivedAgentsTab" class="tab-content">
+                        <div id="archivedAgentList" class="loading">Loading archived agents...</div>
+                    </div>
+                    
+                    <!-- Add Agent Tab -->
+                    <div id="addAgentTab" class="tab-content">
+                        <div class="form-group">
+                            <label for="newAgentName">Agent Name</label>
+                            <input type="text" id="newAgentName" placeholder="Enter agent name">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="newAgentSSN">Social Security Number</label>
+                            <input type="text" id="newAgentSSN" placeholder="XXX-XX-XXXX" maxlength="11">
+                        </div>
+
+                        <div class="form-group" id="newAgentLocationGroup" style="display: none;">
+                            <label for="newAgentLocation">Location</label>
+                            <select id="newAgentLocation"></select>
+                        </div>
+                        
+                        <button class="btn-primary" onclick="addAgent()">Add Agent to Roster</button>
                     </div>
                 </div>
                 
+                <!-- Right Column: Statistics & Charts -->
                 <div class="card">
-                    <h2>Payment Statistics</h2>
+                    <h2>📊 Payment Statistics</h2>
                     
                     <div class="stat-grid">
                         <div class="stat-card">
@@ -617,22 +807,46 @@
                         </div>
                     </div>
 
-                    <div class="total-box" style="background: #10ac84;">
-                        <h3>Total Agents</h3>
-                        <div class="amount" id="agentCount">0</div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div class="total-box" style="background: #10ac84;">
+                            <h3>Total Agents</h3>
+                            <div class="amount" id="agentCount">0</div>
+                        </div>
+
+                        <div class="total-box" style="background: #ee5a6f;">
+                            <h3>Total Payments</h3>
+                            <div class="amount" id="paymentCount">0</div>
+                        </div>
                     </div>
 
-                    <div class="total-box" style="background: #ee5a6f;">
-                        <h3>Total Payments</h3>
-                        <div class="amount" id="paymentCount">0</div>
+                    <!-- Chart -->
+                    <div class="chart-container">
+                        <canvas id="paymentChart"></canvas>
                     </div>
                 </div>
             </div>
             
+            <!-- Agent Pay Summary -->
             <div class="card full-width">
-                <div class="collapsible-header" onclick="togglePaymentRecords()">
+                <div class="collapsible-header" onclick="toggleSection('paySummary')">
+                    <h2>💵 Agent Pay Summary</h2>
+                    <button class="collapse-toggle" id="paySummaryCollapseBtn">▼ Show Summary</button>
+                </div>
+                
+                <div class="records-summary" id="paySummarySummary">
+                    View each agent's earnings breakdown
+                </div>
+                
+                <div class="collapsible-content" id="paySummaryContent">
+                    <div id="paySummaryTable" class="loading">Loading pay summary...</div>
+                </div>
+            </div>
+            
+            <!-- Payment Records -->
+            <div class="card full-width">
+                <div class="collapsible-header" onclick="toggleSection('paymentRecords')">
                     <h2>📋 Payment Records</h2>
-                    <button class="collapse-toggle" id="collapseBtn">▼ Show Records</button>
+                    <button class="collapse-toggle" id="paymentRecordsCollapseBtn">▼ Show Records</button>
                 </div>
                 
                 <div class="records-summary" id="recordsSummary">
@@ -640,10 +854,19 @@
                 </div>
                 
                 <div class="collapsible-content" id="paymentRecordsContent">
+                    <!-- Date Filter -->
+                    <div class="date-filter">
+                        <label for="filterDateFrom">From:</label>
+                        <input type="date" id="filterDateFrom">
+                        <label for="filterDateTo">To:</label>
+                        <input type="date" id="filterDateTo">
+                        <button class="btn-secondary" onclick="applyDateFilter()">Apply Filter</button>
+                        <button class="btn-secondary" onclick="clearDateFilter()">Clear</button>
+                    </div>
+                    
                     <div class="export-controls">
                         <button class="btn-primary" onclick="exportToCSV()">Export to CSV</button>
                         <button class="btn-secondary" onclick="clearAllRecords()">Clear All Records</button>
-                        <button class="btn-secondary" onclick="changePassword()">Change Password</button>
                     </div>
                     
                     <table class="records-table">
@@ -666,18 +889,68 @@
                 </div>
             </div>
             
+            <!-- Location Management (Super Admin Only) -->
+            <div class="card full-width" id="locationManagementSection" style="display: none;">
+                <div class="collapsible-header" onclick="toggleSection('locationManagement')">
+                    <h2>🏢 Location Management</h2>
+                    <button class="collapse-toggle" id="locationManagementCollapseBtn">▼ Show Locations</button>
+                </div>
+                
+                <div class="records-summary" id="locationManagementSummary">
+                    Manage office locations
+                </div>
+                
+                <div class="collapsible-content" id="locationManagementContent">
+                    <!-- Add Location Form -->
+                    <div class="inline-form">
+                        <div class="form-group">
+                            <label for="newLocationName">Location Name</label>
+                            <input type="text" id="newLocationName" placeholder="e.g., Downtown Office">
+                        </div>
+                        <div class="form-group">
+                            <label for="newLocationAddress">Address (optional)</label>
+                            <input type="text" id="newLocationAddress" placeholder="123 Main St">
+                        </div>
+                        <div class="form-group">
+                            <label for="newLocationDisplayName">Display Name (optional)</label>
+                            <input type="text" id="newLocationDisplayName" placeholder="Custom branding">
+                        </div>
+                        <button class="btn-success" onclick="addLocation()">+ Add Location</button>
+                    </div>
+                    
+                    <div id="locationList" class="loading">Loading locations...</div>
+                </div>
+            </div>
+            
             <!-- Admin Users Management (Super Admin Only) -->
             <div class="card full-width" id="adminUsersSection" style="display: none;">
-                <div class="collapsible-header" onclick="toggleAdminUsers()">
+                <div class="collapsible-header" onclick="toggleSection('adminUsers')">
                     <h2>👥 Location Admin Accounts</h2>
                     <button class="collapse-toggle" id="adminUsersCollapseBtn">▼ Show Admins</button>
                 </div>
                 
                 <div class="records-summary" id="adminUsersSummary">
-                    Manage location admin passwords
+                    Manage location admin accounts
                 </div>
                 
                 <div class="collapsible-content" id="adminUsersContent">
+                    <!-- Create Admin Form -->
+                    <div class="inline-form">
+                        <div class="form-group">
+                            <label for="newAdminUsername">Username</label>
+                            <input type="text" id="newAdminUsername" placeholder="username">
+                        </div>
+                        <div class="form-group">
+                            <label for="newAdminPassword">Password</label>
+                            <input type="password" id="newAdminPassword" placeholder="min 6 characters">
+                        </div>
+                        <div class="form-group">
+                            <label for="newAdminLocation">Location</label>
+                            <select id="newAdminLocation"></select>
+                        </div>
+                        <button class="btn-success" onclick="createAdminUser()">+ Create Admin</button>
+                    </div>
+                    
                     <div id="adminUsersList" class="loading">Loading admin users...</div>
                 </div>
             </div>
@@ -699,24 +972,17 @@
     </div>
 
     <script>
-        // Configuration - UPDATE THIS WITH YOUR BACKEND URL
+        // Configuration
         const API_URL = 'https://spiff-backend.onrender.com/api';
         
         let authToken = null;
-        let allAgents = []; // Store full agent list for filtering
+        let allAgents = [];
+        let allPayments = [];
+        let allLocations = [];
+        let paymentChart = null;
 
-        // Format SSN as user types
-        document.getElementById('newAgentSSN').addEventListener('input', function(e) {
-            let value = e.target.value.replace(/\D/g, '');
-            if (value.length > 3 && value.length <= 5) {
-                value = value.slice(0, 3) + '-' + value.slice(3);
-            } else if (value.length > 5) {
-                value = value.slice(0, 3) + '-' + value.slice(3, 5) + '-' + value.slice(5, 9);
-            }
-            e.target.value = value;
-        });
-
-        // Authentication
+        // ==================== AUTHENTICATION ====================
+        
         async function login() {
             const username = document.getElementById('username').value.trim();
             const password = document.getElementById('password').value;
@@ -768,8 +1034,14 @@
                 document.querySelector('.header h1').textContent = '💰 ' + displayName + ' - Admin Dashboard';
                 document.querySelector('.header p').textContent = locationName ? locationName + ' — Manage agents and view payment reports' : 'Manage agents and view payment reports';
                 document.title = displayName + ' - Admin Dashboard';
+
+                // Show/hide super admin sections
+                const isSuperAdmin = userInfo.role === 'super_admin';
+                document.getElementById('locationManagementSection').style.display = isSuperAdmin ? 'block' : 'none';
+                document.getElementById('adminUsersSection').style.display = isSuperAdmin ? 'block' : 'none';
+                document.getElementById('newAgentLocationGroup').style.display = isSuperAdmin ? 'block' : 'none';
             } catch (e) {
-                // Ignore — use defaults
+                console.error('Branding error:', e);
             }
         }
 
@@ -817,57 +1089,163 @@
             }
         }
 
-        // Agent management
-        async function addAgent(force = false) {
-            const name = document.getElementById('newAgentName').value.trim();
-            const ssn = document.getElementById('newAgentSSN').value.trim();
+        // ==================== TAB NAVIGATION ====================
+        
+        function showAgentTab(tabName) {
+            // Update buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // Update content
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.getElementById(tabName + 'AgentsTab').classList.add('active');
+            
+            // Load archived agents if switching to that tab
+            if (tabName === 'archived') {
+                loadArchivedAgents();
+            }
+        }
 
-            if (!name || !ssn) {
-                showAlert('Please enter agent name and SSN', 'error');
+        // ==================== COLLAPSIBLE SECTIONS ====================
+        
+        function toggleSection(sectionName) {
+            const content = document.getElementById(sectionName + 'Content');
+            const btn = document.getElementById(sectionName + 'CollapseBtn');
+            const summary = document.getElementById(sectionName + 'Summary');
+            
+            if (content.classList.contains('expanded')) {
+                content.classList.remove('expanded');
+                btn.textContent = '▼ Show ' + btn.textContent.split(' ').slice(1).join(' ');
+                if (summary) summary.style.display = 'block';
+            } else {
+                content.classList.add('expanded');
+                btn.textContent = '▲ Hide ' + btn.textContent.split(' ').slice(1).join(' ');
+                if (summary) summary.style.display = 'none';
+            }
+        }
+
+        // ==================== LOCATIONS ====================
+        
+        async function loadLocations() {
+            try {
+                const response = await fetch(`${API_URL}/locations`);
+                allLocations = await response.json();
+                
+                // Populate dropdowns
+                populateLocationDropdowns();
+                displayLocations();
+            } catch (error) {
+                console.error('Failed to load locations:', error);
+            }
+        }
+
+        function populateLocationDropdowns() {
+            const dropdowns = ['newAgentLocation', 'newAdminLocation', 'moveLocationSelect'];
+            dropdowns.forEach(id => {
+                const select = document.getElementById(id);
+                if (select) {
+                    select.innerHTML = allLocations.map(loc => 
+                        `<option value="${loc.id}">${loc.name}</option>`
+                    ).join('');
+                }
+            });
+        }
+
+        function displayLocations() {
+            const container = document.getElementById('locationList');
+            if (!container) return;
+
+            document.getElementById('locationManagementSummary').innerHTML = 
+                `<strong>${allLocations.length}</strong> locations configured`;
+
+            if (allLocations.length === 0) {
+                container.innerHTML = '<p style="color: #999; text-align: center;">No locations yet</p>';
+                return;
+            }
+
+            container.innerHTML = allLocations.map(loc => `
+                <div class="location-item">
+                    <div class="location-info">
+                        <div class="location-name">${loc.name}</div>
+                        ${loc.address ? `<div class="location-address">${loc.address}</div>` : ''}
+                        ${loc.display_name ? `<div class="location-meta">Display: ${loc.display_name}</div>` : ''}
+                    </div>
+                    <button class="delete-btn" onclick="deleteLocation('${loc.id}', '${loc.name.replace(/'/g, "\\'")}')">Delete</button>
+                </div>
+            `).join('');
+        }
+
+        async function addLocation() {
+            const name = document.getElementById('newLocationName').value.trim();
+            const address = document.getElementById('newLocationAddress').value.trim();
+            const displayName = document.getElementById('newLocationDisplayName').value.trim();
+
+            if (!name) {
+                showAlert('Location name is required', 'error');
                 return;
             }
 
             try {
-                const response = await fetch(`${API_URL}/agents`, {
+                const response = await fetch(`${API_URL}/locations`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${authToken}`
                     },
-                    body: JSON.stringify({ name, ssn, force })
+                    body: JSON.stringify({ name, address, displayName })
                 });
 
                 const data = await response.json();
 
                 if (!response.ok) {
-                    // Check if it's a duplicate warning (can be overridden)
-                    if (response.status === 409 && data.warning && data.existingAgent) {
-                        const confirmAdd = confirm(
-                            `⚠️ An agent with this SSN already exists:\n\n` +
-                            `Name: ${data.existingAgent.name}\n` +
-                            `Location: ${data.existingAgent.location}\n\n` +
-                            `Do you want to add this agent anyway?`
-                        );
-                        
-                        if (confirmAdd) {
-                            // Re-submit with force flag
-                            return addAgent(true);
-                        }
-                        return;
-                    }
-                    throw new Error(data.error || 'Failed to add agent');
+                    throw new Error(data.error || 'Failed to add location');
                 }
 
-                document.getElementById('newAgentName').value = '';
-                document.getElementById('newAgentSSN').value = '';
-                
-                loadAgents();
-                loadStats();
-                showAlert('Agent added successfully!');
+                document.getElementById('newLocationName').value = '';
+                document.getElementById('newLocationAddress').value = '';
+                document.getElementById('newLocationDisplayName').value = '';
+
+                loadLocations();
+                showAlert('Location added successfully!');
             } catch (error) {
                 showAlert(error.message, 'error');
             }
         }
+
+        async function deleteLocation(id, name) {
+            if (!confirm(`Delete location "${name}"?\n\nThis will only work if no agents are assigned to this location.`)) return;
+
+            try {
+                const response = await fetch(`${API_URL}/locations/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to delete location');
+                }
+
+                loadLocations();
+                showAlert('Location deleted successfully');
+            } catch (error) {
+                showAlert(error.message, 'error');
+            }
+        }
+
+        // ==================== AGENTS ====================
+        
+        // Format SSN as user types
+        document.getElementById('newAgentSSN').addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length > 3 && value.length <= 5) {
+                value = value.slice(0, 3) + '-' + value.slice(3);
+            } else if (value.length > 5) {
+                value = value.slice(0, 3) + '-' + value.slice(3, 5) + '-' + value.slice(5, 9);
+            }
+            e.target.value = value;
+        });
 
         async function loadAgents() {
             try {
@@ -881,12 +1259,31 @@
                     throw new Error(agents.error || 'Failed to load agents');
                 }
 
-                allAgents = agents; // Store for filtering
+                allAgents = agents;
                 setupAgentFilters();
-                filterAgents(); // Apply current filter/sort
+                filterAgents();
             } catch (error) {
                 document.getElementById('agentList').innerHTML = 
                     `<p style="color: #ff4757;">Error loading agents: ${error.message}</p>`;
+            }
+        }
+
+        async function loadArchivedAgents() {
+            try {
+                const response = await fetch(`${API_URL}/agents/archived`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                const agents = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(agents.error || 'Failed to load archived agents');
+                }
+
+                displayArchivedAgents(agents);
+            } catch (error) {
+                document.getElementById('archivedAgentList').innerHTML = 
+                    `<p style="color: #ff4757;">Error loading archived agents: ${error.message}</p>`;
             }
         }
 
@@ -899,10 +1296,9 @@
             if (isSuperAdmin && allAgents.length > 0) {
                 filterControls.style.display = 'block';
                 
-                // Get unique locations from agents
                 const locations = [...new Set(allAgents.map(a => JSON.stringify({ id: a.location_id, name: a.location_name })))]
                     .map(s => JSON.parse(s))
-                    .sort((a, b) => a.name.localeCompare(b.name));
+                    .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
                 
                 const select = document.getElementById('agentLocationFilter');
                 const currentValue = select.value;
@@ -910,7 +1306,6 @@
                 select.innerHTML = '<option value="">All Locations</option>' +
                     locations.map(loc => `<option value="${loc.id}">${loc.name}</option>`).join('');
                 
-                // Restore previous selection if still valid
                 if (currentValue && locations.some(l => l.id === currentValue)) {
                     select.value = currentValue;
                 }
@@ -925,23 +1320,19 @@
             
             let filtered = [...allAgents];
             
-            // Apply location filter
             if (locationFilter) {
                 filtered = filtered.filter(a => a.location_id === locationFilter);
             }
             
-            // Apply sort
             if (sortOrder === 'name') {
                 filtered.sort((a, b) => a.name.localeCompare(b.name));
             } else {
-                // Sort by location, then name
                 filtered.sort((a, b) => {
                     const locCompare = (a.location_name || '').localeCompare(b.location_name || '');
                     return locCompare !== 0 ? locCompare : a.name.localeCompare(b.name);
                 });
             }
             
-            // Update count
             const countEl = document.getElementById('agentFilterCount');
             if (countEl) {
                 if (locationFilter) {
@@ -960,7 +1351,7 @@
             const isSuperAdmin = userInfo.role === 'super_admin';
             
             if (agents.length === 0) {
-                container.innerHTML = '<p style="color: #999; text-align: center; padding: 20px;">No agents added yet</p>';
+                container.innerHTML = '<p style="color: #999; text-align: center; padding: 20px;">No agents found</p>';
                 return;
             }
             
@@ -980,8 +1371,89 @@
             `).join('');
         }
 
+        function displayArchivedAgents(agents) {
+            const container = document.getElementById('archivedAgentList');
+            const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
+            const isSuperAdmin = userInfo.role === 'super_admin';
+            
+            if (agents.length === 0) {
+                container.innerHTML = '<p style="color: #999; text-align: center; padding: 20px;">No archived agents</p>';
+                return;
+            }
+            
+            container.innerHTML = agents.map(agent => `
+                <div class="agent-item">
+                    <div class="agent-info">
+                        <div class="agent-name">${agent.name}</div>
+                        <div class="agent-ssn">${maskSSN(agent.ssn)}</div>
+                        ${isSuperAdmin && agent.location_name ? `<div class="agent-location">📍 ${agent.location_name}</div>` : ''}
+                        <div class="agent-location">Archived: ${new Date(agent.archived_at).toLocaleDateString()}</div>
+                    </div>
+                    <div class="agent-actions">
+                        <button class="restore-btn" onclick="restoreAgent('${agent.id}')">Restore</button>
+                        <button class="delete-agent-btn" onclick="deleteAgent('${agent.id}')">Delete</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function addAgent(force = false) {
+            const name = document.getElementById('newAgentName').value.trim();
+            const ssn = document.getElementById('newAgentSSN').value.trim();
+            const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
+            const locationId = userInfo.role === 'super_admin' ? document.getElementById('newAgentLocation').value : null;
+
+            if (!name || !ssn) {
+                showAlert('Please enter agent name and SSN', 'error');
+                return;
+            }
+
+            try {
+                const body = { name, ssn, force };
+                if (locationId) body.locationId = locationId;
+
+                const response = await fetch(`${API_URL}/agents`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify(body)
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    if (response.status === 409 && data.warning && data.existingAgent) {
+                        const confirmAdd = confirm(
+                            `⚠️ An agent with this SSN already exists:\n\n` +
+                            `Name: ${data.existingAgent.name}\n` +
+                            `Location: ${data.existingAgent.location}\n\n` +
+                            `Do you want to add this agent anyway?`
+                        );
+                        
+                        if (confirmAdd) {
+                            return addAgent(true);
+                        }
+                        return;
+                    }
+                    throw new Error(data.error || 'Failed to add agent');
+                }
+
+                document.getElementById('newAgentName').value = '';
+                document.getElementById('newAgentSSN').value = '';
+                
+                loadAgents();
+                loadStats();
+                showAgentTab('active');
+                showAlert('Agent added successfully!');
+            } catch (error) {
+                showAlert(error.message, 'error');
+            }
+        }
+
         async function archiveAgent(id) {
-            if (!confirm('Archive this agent? They will be hidden from the active list but can be restored later.')) return;
+            if (!confirm('Archive this agent? They can be restored later.')) return;
 
             try {
                 const response = await fetch(`${API_URL}/agents/${id}/archive`, {
@@ -997,14 +1469,36 @@
 
                 loadAgents();
                 loadStats();
-                showAlert('Agent archived successfully');
+                showAlert('Agent archived');
+            } catch (error) {
+                showAlert(error.message, 'error');
+            }
+        }
+
+        async function restoreAgent(id) {
+            try {
+                const response = await fetch(`${API_URL}/agents/${id}/restore`, {
+                    method: 'PUT',
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to restore agent');
+                }
+
+                loadAgents();
+                loadArchivedAgents();
+                loadStats();
+                showAlert('Agent restored!');
             } catch (error) {
                 showAlert(error.message, 'error');
             }
         }
 
         async function deleteAgent(id) {
-            if (!confirm('⚠️ PERMANENTLY DELETE this agent?\n\nThis cannot be undone. Their payment history will remain but they will be removed from the system entirely.\n\nAre you sure?')) return;
+            if (!confirm('⚠️ PERMANENTLY DELETE this agent?\n\nThis cannot be undone.')) return;
 
             try {
                 const response = await fetch(`${API_URL}/agents/${id}`, {
@@ -1019,25 +1513,16 @@
                 }
 
                 loadAgents();
+                loadArchivedAgents();
                 loadStats();
-                showAlert('Agent permanently deleted');
+                showAlert('Agent deleted');
             } catch (error) {
                 showAlert(error.message, 'error');
             }
         }
 
-        // Move agent (super admin only)
+        // Move agent modal
         let moveAgentId = null;
-        let allLocations = [];
-
-        async function loadLocations() {
-            try {
-                const response = await fetch(`${API_URL}/locations`);
-                allLocations = await response.json();
-            } catch (error) {
-                console.error('Failed to load locations:', error);
-            }
-        }
 
         function openMoveModal(agentId, agentName, currentLocationId) {
             moveAgentId = agentId;
@@ -1079,13 +1564,96 @@
 
                 closeMoveModal();
                 loadAgents();
-                showAlert(`Agent moved to ${data.newLocation} successfully!`);
+                showAlert(`Agent moved to ${data.newLocation}!`);
             } catch (error) {
                 showAlert(error.message, 'error');
             }
         }
 
-        // Payment records
+        // ==================== PAY SUMMARY ====================
+        
+        async function loadPaySummary() {
+            try {
+                const response = await fetch(`${API_URL}/agents/pay-summary`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                const summary = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(summary.error || 'Failed to load pay summary');
+                }
+
+                displayPaySummary(summary);
+            } catch (error) {
+                document.getElementById('paySummaryTable').innerHTML = 
+                    `<p style="color: #ff4757;">Error loading pay summary: ${error.message}</p>`;
+            }
+        }
+
+        function displayPaySummary(summary) {
+            const container = document.getElementById('paySummaryTable');
+            const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
+            const isSuperAdmin = userInfo.role === 'super_admin';
+
+            if (summary.length === 0) {
+                container.innerHTML = '<p style="color: #999; text-align: center;">No agent data</p>';
+                return;
+            }
+
+            // Calculate totals
+            const totals = summary.reduce((acc, row) => ({
+                today: acc.today + row.today_total,
+                week: acc.week + row.week_total,
+                month: acc.month + row.month_total,
+                year: acc.year + row.year_total,
+                allTime: acc.allTime + row.all_time_total
+            }), { today: 0, week: 0, month: 0, year: 0, allTime: 0 });
+
+            container.innerHTML = `
+                <table class="pay-summary-table">
+                    <thead>
+                        <tr>
+                            <th>Agent</th>
+                            ${isSuperAdmin ? '<th>Location</th>' : ''}
+                            <th>Today</th>
+                            <th>This Week</th>
+                            <th>This Month</th>
+                            <th>This Year</th>
+                            <th>All Time</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${summary.map(row => `
+                            <tr>
+                                <td>${row.name}</td>
+                                ${isSuperAdmin ? `<td>${row.location_name || '-'}</td>` : ''}
+                                <td>$${row.today_total.toFixed(2)}</td>
+                                <td>$${row.week_total.toFixed(2)}</td>
+                                <td>$${row.month_total.toFixed(2)}</td>
+                                <td>$${row.year_total.toFixed(2)}</td>
+                                <td>$${row.all_time_total.toFixed(2)}</td>
+                            </tr>
+                        `).join('')}
+                        <tr class="total-row">
+                            <td><strong>TOTAL</strong></td>
+                            ${isSuperAdmin ? '<td></td>' : ''}
+                            <td><strong>$${totals.today.toFixed(2)}</strong></td>
+                            <td><strong>$${totals.week.toFixed(2)}</strong></td>
+                            <td><strong>$${totals.month.toFixed(2)}</strong></td>
+                            <td><strong>$${totals.year.toFixed(2)}</strong></td>
+                            <td><strong>$${totals.allTime.toFixed(2)}</strong></td>
+                        </tr>
+                    </tbody>
+                </table>
+            `;
+
+            document.getElementById('paySummarySummary').innerHTML = 
+                `<strong>${summary.length}</strong> agents — Total this month: <strong>$${totals.month.toFixed(2)}</strong>`;
+        }
+
+        // ==================== PAYMENTS ====================
+        
         async function loadPayments() {
             try {
                 const response = await fetch(`${API_URL}/payments`, {
@@ -1098,10 +1666,12 @@
                     throw new Error(payments.error || 'Failed to load payments');
                 }
 
+                allPayments = payments;
                 displayPayments(payments);
+                updateChart(payments);
             } catch (error) {
                 document.getElementById('recordsTableBody').innerHTML = 
-                    `<tr><td colspan="6" style="color: #ff4757;">Error loading payments: ${error.message}</td></tr>`;
+                    `<tr><td colspan="6" style="color: #ff4757;">Error: ${error.message}</td></tr>`;
             }
         }
 
@@ -1109,13 +1679,11 @@
             const tbody = document.getElementById('recordsTableBody');
             const summary = document.getElementById('recordsSummary');
             
-            // Update summary
             const total = payments.reduce((sum, p) => sum + parseFloat(p.amount), 0);
-            summary.innerHTML = `<strong>${payments.length}</strong> payment records totaling <strong>$${total.toFixed(2)}</strong> — Click to expand`;
+            summary.innerHTML = `<strong>${payments.length}</strong> payment records totaling <strong>$${total.toFixed(2)}</strong>`;
             
             if (payments.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #999;">No records yet</td></tr>';
-                summary.innerHTML = 'No payment records yet';
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #999;">No records found</td></tr>';
                 return;
             }
             
@@ -1129,6 +1697,28 @@
                     <td><button class="delete-btn" onclick="deletePayment('${payment.id}')">Delete</button></td>
                 </tr>
             `).join('');
+        }
+
+        function applyDateFilter() {
+            const fromDate = document.getElementById('filterDateFrom').value;
+            const toDate = document.getElementById('filterDateTo').value;
+
+            let filtered = [...allPayments];
+
+            if (fromDate) {
+                filtered = filtered.filter(p => p.payment_date >= fromDate);
+            }
+            if (toDate) {
+                filtered = filtered.filter(p => p.payment_date <= toDate);
+            }
+
+            displayPayments(filtered);
+        }
+
+        function clearDateFilter() {
+            document.getElementById('filterDateFrom').value = '';
+            document.getElementById('filterDateTo').value = '';
+            displayPayments(allPayments);
         }
 
         async function deletePayment(id) {
@@ -1148,7 +1738,8 @@
 
                 loadPayments();
                 loadStats();
-                showAlert('Payment record deleted');
+                loadPaySummary();
+                showAlert('Payment deleted');
             } catch (error) {
                 showAlert(error.message, 'error');
             }
@@ -1171,13 +1762,37 @@
 
                 loadPayments();
                 loadStats();
-                showAlert('All payment records cleared');
+                loadPaySummary();
+                showAlert('All records cleared');
             } catch (error) {
                 showAlert(error.message, 'error');
             }
         }
 
-        // Statistics
+        async function exportToCSV() {
+            if (allPayments.length === 0) {
+                showAlert('No records to export', 'error');
+                return;
+            }
+
+            let csv = 'Date,Agent Name,SSN,Amount\n';
+            allPayments.forEach(payment => {
+                csv += `${payment.payment_date},${payment.agent_name},${payment.ssn},${parseFloat(payment.amount).toFixed(2)}\n`;
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `spiff-records-${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+            window.URL.revokeObjectURL(url);
+
+            showAlert('Records exported!');
+        }
+
+        // ==================== STATISTICS & CHARTS ====================
+        
         async function loadStats() {
             try {
                 const response = await fetch(`${API_URL}/stats`, {
@@ -1201,66 +1816,68 @@
             }
         }
 
-        // Export to CSV
-        async function exportToCSV() {
-            try {
-                const response = await fetch(`${API_URL}/payments`, {
-                    headers: { 'Authorization': `Bearer ${authToken}` }
-                });
+        function updateChart(payments) {
+            // Group payments by date (last 14 days)
+            const today = new Date();
+            const dates = [];
+            const amounts = [];
 
-                const payments = await response.json();
+            for (let i = 13; i >= 0; i--) {
+                const date = new Date(today);
+                date.setDate(date.getDate() - i);
+                const dateStr = date.toISOString().split('T')[0];
+                dates.push(date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+                
+                const dayTotal = payments
+                    .filter(p => p.payment_date === dateStr)
+                    .reduce((sum, p) => sum + parseFloat(p.amount), 0);
+                amounts.push(dayTotal);
+            }
 
-                if (payments.length === 0) {
-                    showAlert('No records to export', 'error');
-                    return;
+            const ctx = document.getElementById('paymentChart').getContext('2d');
+
+            if (paymentChart) {
+                paymentChart.destroy();
+            }
+
+            paymentChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: dates,
+                    datasets: [{
+                        label: 'Daily Payments',
+                        data: amounts,
+                        backgroundColor: 'rgba(102, 126, 234, 0.7)',
+                        borderColor: 'rgba(102, 126, 234, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: value => '$' + value
+                            }
+                        }
+                    }
                 }
-
-                let csv = 'Date,Agent Name,SSN,Amount\n';
-                payments.forEach(payment => {
-                    csv += `${payment.payment_date},${payment.agent_name},${payment.ssn},${parseFloat(payment.amount).toFixed(2)}\n`;
-                });
-
-                const blob = new Blob([csv], { type: 'text/csv' });
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `spiff-records-${new Date().toISOString().split('T')[0]}.csv`;
-                a.click();
-                window.URL.revokeObjectURL(url);
-
-                showAlert('Records exported successfully!');
-            } catch (error) {
-                showAlert('Error exporting records', 'error');
-            }
+            });
         }
 
-        // Toggle admin users section
-        function toggleAdminUsers() {
-            const content = document.getElementById('adminUsersContent');
-            const btn = document.getElementById('adminUsersCollapseBtn');
-            const summary = document.getElementById('adminUsersSummary');
-            
-            if (content.classList.contains('expanded')) {
-                content.classList.remove('expanded');
-                btn.textContent = '▼ Show Admins';
-                summary.style.display = 'block';
-            } else {
-                content.classList.add('expanded');
-                btn.textContent = '▲ Hide Admins';
-                summary.style.display = 'none';
-            }
-        }
-
-        // Load admin users (super admin only)
+        // ==================== ADMIN USERS ====================
+        
         async function loadAdminUsers() {
             try {
                 const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
-                if (userInfo.role !== 'super_admin') {
-                    document.getElementById('adminUsersSection').style.display = 'none';
-                    return;
-                }
-
-                document.getElementById('adminUsersSection').style.display = 'block';
+                if (userInfo.role !== 'super_admin') return;
 
                 const response = await fetch(`${API_URL}/admin/users`, {
                     headers: { 'Authorization': `Bearer ${authToken}` }
@@ -1275,7 +1892,7 @@
                 displayAdminUsers(users);
             } catch (error) {
                 document.getElementById('adminUsersList').innerHTML = 
-                    `<p style="color: #ff4757;">Error loading admin users: ${error.message}</p>`;
+                    `<p style="color: #ff4757;">Error: ${error.message}</p>`;
             }
         }
 
@@ -1284,7 +1901,7 @@
             const locationAdmins = users.filter(u => u.role === 'location_admin');
             
             document.getElementById('adminUsersSummary').innerHTML = 
-                `<strong>${locationAdmins.length}</strong> location admin accounts — Click to manage`;
+                `<strong>${locationAdmins.length}</strong> location admin accounts`;
 
             if (locationAdmins.length === 0) {
                 container.innerHTML = '<p style="color: #999; text-align: center;">No location admins yet</p>';
@@ -1295,7 +1912,7 @@
                 <div class="admin-user-item">
                     <div class="admin-user-info">
                         <div class="admin-user-name">${user.username}</div>
-                        <div class="admin-user-location">${user.location_name || 'No location'}</div>
+                        <div class="admin-user-location">📍 ${user.location_name || 'No location'}</div>
                         <div class="admin-user-meta">Last login: ${user.last_login ? new Date(user.last_login).toLocaleString() : 'Never'}</div>
                     </div>
                     <button class="reset-pwd-btn" onclick="resetAdminPassword('${user.id}', '${user.username}')">Reset Password</button>
@@ -1303,8 +1920,49 @@
             `).join('');
         }
 
+        async function createAdminUser() {
+            const username = document.getElementById('newAdminUsername').value.trim();
+            const password = document.getElementById('newAdminPassword').value;
+            const locationId = document.getElementById('newAdminLocation').value;
+
+            if (!username || !password || !locationId) {
+                showAlert('All fields are required', 'error');
+                return;
+            }
+
+            if (password.length < 6) {
+                showAlert('Password must be at least 6 characters', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/admin/users`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({ username, password, locationId })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to create admin');
+                }
+
+                document.getElementById('newAdminUsername').value = '';
+                document.getElementById('newAdminPassword').value = '';
+
+                loadAdminUsers();
+                showAlert('Admin account created!');
+            } catch (error) {
+                showAlert(error.message, 'error');
+            }
+        }
+
         async function resetAdminPassword(userId, username) {
-            const newPassword = prompt(\`Enter new password for "\${username}" (min 6 characters):\`);
+            const newPassword = prompt(`Enter new password for "${username}" (min 6 characters):`);
             if (!newPassword) return;
 
             if (newPassword.length < 6) {
@@ -1334,24 +1992,8 @@
             }
         }
 
-        // Toggle payment records section
-        function togglePaymentRecords() {
-            const content = document.getElementById('paymentRecordsContent');
-            const btn = document.getElementById('collapseBtn');
-            const summary = document.getElementById('recordsSummary');
-            
-            if (content.classList.contains('expanded')) {
-                content.classList.remove('expanded');
-                btn.textContent = '▼ Show Records';
-                summary.style.display = 'block';
-            } else {
-                content.classList.add('expanded');
-                btn.textContent = '▲ Hide Records';
-                summary.style.display = 'none';
-            }
-        }
-
-        // Utilities
+        // ==================== UTILITIES ====================
+        
         function maskSSN(ssn) {
             return 'XXX-XX-' + ssn.slice(-4);
         }
@@ -1366,14 +2008,16 @@
         }
 
         function loadAllData() {
-            loadLocations(); // For move agent feature
+            loadLocations();
             loadAgents();
             loadPayments();
             loadStats();
+            loadPaySummary();
             loadAdminUsers();
         }
 
-        // Initialize
+        // ==================== INITIALIZE ====================
+        
         window.addEventListener('DOMContentLoaded', () => {
             const token = localStorage.getItem('authToken');
             if (token) {
@@ -1385,7 +2029,6 @@
                 showLogin();
             }
 
-            // Handle Enter key on login
             document.getElementById('password').addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') login();
             });
