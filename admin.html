@@ -968,11 +968,11 @@
                     <div style="margin-top: 20px; border-top: 2px solid #e5e7eb; padding-top: 20px;">
                         <h3 style="margin-bottom: 12px; font-size: 1.2em; color: #333;">🏆 Agent Leaderboard</h3>
                         <div style="display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap;">
-                            <button class="tab-btn active" onclick="switchLeaderboard('today_total', this)" style="font-size: 0.85em; padding: 6px 12px;">Today</button>
+                            <button class="tab-btn" onclick="switchLeaderboard('today_total', this)" style="font-size: 0.85em; padding: 6px 12px;">Today</button>
                             <button class="tab-btn" onclick="switchLeaderboard('week_total', this)" style="font-size: 0.85em; padding: 6px 12px;">Week</button>
                             <button class="tab-btn" onclick="switchLeaderboard('month_total', this)" style="font-size: 0.85em; padding: 6px 12px;">Month</button>
                             <button class="tab-btn" onclick="switchLeaderboard('year_total', this)" style="font-size: 0.85em; padding: 6px 12px;">Year</button>
-                            <button class="tab-btn" onclick="switchLeaderboard('all_time_total', this)" style="font-size: 0.85em; padding: 6px 12px;">All Time</button>
+                            <button class="tab-btn active" onclick="switchLeaderboard('all_time_total', this)" style="font-size: 0.85em; padding: 6px 12px;">All Time</button>
                         </div>
                         <div id="leaderboardBody" style="display: grid; gap: 8px;"></div>
                     </div>
@@ -1827,7 +1827,7 @@
         // ==================== LEADERBOARD ====================
         let leaderboardData = [];
         let allPaySummaryData = [];
-        let currentLeaderboardPeriod = 'today_total';
+        let currentLeaderboardPeriod = 'all_time_total';
 
         function switchLeaderboard(period, btn) {
             currentLeaderboardPeriod = period;
@@ -1885,7 +1885,7 @@
                     throw new Error(summary.error || 'Failed to load pay summary');
                 }
 
-                displayPaySummary(summary);
+                try { displayPaySummary(summary); } catch(e) { console.error('Pay summary display error:', e); }
                 allPaySummaryData = summary;
                 const locId = getSelectedLocationId();
                 leaderboardData = locId ? summary.filter(a => a.location_id === locId) : summary;
