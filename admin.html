@@ -903,6 +903,10 @@
                                     <input type="text" id="newAgentSSN" placeholder="XXX-XX-XXXX" maxlength="11">
                                 </div>
                             </div>
+                            <div class="form-group" style="margin-top: 15px; margin-bottom: 0;">
+                                <label for="newAgentAddress">Address</label>
+                                <input type="text" id="newAgentAddress" placeholder="123 Main St, City, State ZIP">
+                            </div>
                             <div class="form-group" id="newAgentLocationGroup" style="display: none; margin-top: 15px; margin-bottom: 0;">
                                 <label for="newAgentLocation">Assign to Room</label>
                                 <select id="newAgentLocation"></select>
@@ -1528,9 +1532,11 @@
                     <div class="agent-info">
                         <div class="agent-name">${agent.name}</div>
                         <div class="agent-ssn">${maskSSN(agent.ssn)}</div>
+                        ${agent.address ? `<div class="agent-location">🏠 ${agent.address}</div>` : '<div class="agent-location" style="color:#f59e0b;">⚠️ No address</div>'}
                         ${showLocation && agent.location_name ? `<div class="agent-location">📍 ${agent.location_name}</div>` : ''}
                     </div>
                     <div class="agent-actions">
+                        <button class="move-agent-btn" onclick="editAgentAddress('${agent.id}', '${(agent.address || '').replace(/'/g, "\\'")}')">📝 Address</button>
                         ${isSuperAdmin ? `<button class="move-agent-btn" onclick="openMoveModal('${agent.id}', '${agent.name.replace(/'/g, "\\'")}', '${agent.location_id}')">Move</button>` : ''}
                         <button class="archive-agent-btn" onclick="archiveAgent('${agent.id}')">Archive</button>
                         <button class="delete-agent-btn" onclick="deleteAgent('${agent.id}')">Delete</button>
@@ -1570,6 +1576,7 @@
         async function addAgent(force = false) {
             const name = document.getElementById('newAgentName').value.trim();
             const ssn = document.getElementById('newAgentSSN').value.trim();
+            const address = document.getElementById('newAgentAddress').value.trim();
             const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
             const canPickLocation = userInfo.role === 'super_admin' || (userInfo.location_ids && userInfo.location_ids.length > 1);
             const locationId = canPickLocation ? document.getElementById('newAgentLocation').value : null;
@@ -1580,7 +1587,7 @@
             }
 
             try {
-                const body = { name, ssn, force };
+                const body = { name, ssn, address, force };
                 if (locationId) body.locationId = locationId;
 
                 const response = await fetch(`${API_URL}/agents`, {
@@ -1613,11 +1620,38 @@
 
                 document.getElementById('newAgentName').value = '';
                 document.getElementById('newAgentSSN').value = '';
+                document.getElementById('newAgentAddress').value = '';
                 
                 loadAgents();
                 loadStats();
                 showAgentTab('active');
                 showAlert('Agent added successfully!');
+            } catch (error) {
+                showAlert(error.message, 'error');
+            }
+        }
+
+        async function editAgentAddress(id, currentAddress) {
+            const newAddress = prompt('Enter agent address (for tax records):', currentAddress || '');
+            if (newAddress === null) return; // cancelled
+
+            try {
+                const response = await fetch(`${API_URL}/agents/${id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({ address: newAddress })
+                });
+
+                if (!response.ok) {
+                    const data = await response.json();
+                    throw new Error(data.error || 'Failed to update address');
+                }
+
+                showAlert('Address updated!');
+                loadAgents();
             } catch (error) {
                 showAlert(error.message, 'error');
             }
@@ -1999,9 +2033,10 @@
                 return;
             }
 
-            let csv = 'Date,Agent Name,SSN,Amount\n';
+            let csv = 'Date,Agent Name,SSN,Address,Amount\n';
             allPayments.forEach(payment => {
-                csv += `${payment.payment_date},${payment.agent_name},${payment.ssn},${parseFloat(payment.amount).toFixed(2)}\n`;
+                const addr = (payment.agent_address || '').replace(/,/g, ' ');
+                csv += `${payment.payment_date},${payment.agent_name},${payment.ssn},"${addr}",${parseFloat(payment.amount).toFixed(2)}\n`;
             });
 
             const blob = new Blob([csv], { type: 'text/csv' });
