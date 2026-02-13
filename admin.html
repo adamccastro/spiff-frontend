@@ -962,6 +962,19 @@
                 </div>
             </div>
             
+            <!-- Agent Leaderboard -->
+            <div class="card full-width">
+                <h2>🏆 Agent Leaderboard</h2>
+                <div style="display: flex; gap: 8px; margin-bottom: 15px; flex-wrap: wrap;">
+                    <button class="tab-btn active" onclick="switchLeaderboard('today_total', this)">Today</button>
+                    <button class="tab-btn" onclick="switchLeaderboard('week_total', this)">This Week</button>
+                    <button class="tab-btn" onclick="switchLeaderboard('month_total', this)">This Month</button>
+                    <button class="tab-btn" onclick="switchLeaderboard('year_total', this)">This Year</button>
+                    <button class="tab-btn" onclick="switchLeaderboard('all_time_total', this)">All Time</button>
+                </div>
+                <div id="leaderboardBody" style="display: grid; gap: 8px;"></div>
+            </div>
+
             <!-- Agent Pay Summary -->
             <div class="card full-width">
                 <div class="collapsible-header" onclick="toggleSection('paySummary')">
@@ -1710,6 +1723,54 @@
 
         // ==================== PAY SUMMARY ====================
         
+        // ==================== LEADERBOARD ====================
+        let leaderboardData = [];
+        let currentLeaderboardPeriod = 'today_total';
+
+        function switchLeaderboard(period, btn) {
+            currentLeaderboardPeriod = period;
+            // Update active tab
+            if (btn) {
+                btn.parentElement.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+            }
+            renderLeaderboard();
+        }
+
+        function renderLeaderboard() {
+            const container = document.getElementById('leaderboardBody');
+            if (!leaderboardData.length) {
+                container.innerHTML = '<div style="color:#999; text-align:center; padding:20px;">No agent data yet</div>';
+                return;
+            }
+
+            const sorted = [...leaderboardData]
+                .map(a => ({ name: a.name, location: a.location_name, amount: a[currentLeaderboardPeriod] || 0 }))
+                .sort((a, b) => b.amount - a.amount)
+                .slice(0, 20);
+
+            const maxAmount = sorted[0]?.amount || 1;
+            const medals = ['🥇', '🥈', '🥉'];
+
+            container.innerHTML = sorted.map((agent, i) => {
+                const pct = maxAmount > 0 ? (agent.amount / maxAmount * 100) : 0;
+                const medal = i < 3 ? medals[i] : `<span style="color:#94a3b8;font-weight:600;">${i + 1}</span>`;
+                const barColor = i === 0 ? '#6366f1' : i === 1 ? '#8b5cf6' : i === 2 ? '#a78bfa' : '#cbd5e1';
+                return `
+                    <div style="display:grid; grid-template-columns:30px 1fr auto; align-items:center; gap:12px; padding:8px 12px; background:${i < 3 ? '#f8fafc' : 'transparent'}; border-radius:8px;">
+                        <div style="text-align:center; font-size:1.2em;">${medal}</div>
+                        <div>
+                            <div style="font-weight:600; color:#1e293b;">${agent.name}</div>
+                            <div style="height:6px; background:#f1f5f9; border-radius:3px; margin-top:4px; overflow:hidden;">
+                                <div style="height:100%; width:${pct}%; background:${barColor}; border-radius:3px; transition:width 0.5s;"></div>
+                            </div>
+                        </div>
+                        <div style="font-weight:700; color:#1e293b; font-size:1.1em;">$${agent.amount.toFixed(2)}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
         async function loadPaySummary() {
             try {
                 const response = await fetch(`${API_URL}/agents/pay-summary`, {
@@ -1723,6 +1784,8 @@
                 }
 
                 displayPaySummary(summary);
+                leaderboardData = summary;
+                renderLeaderboard();
             } catch (error) {
                 document.getElementById('paySummaryTable').innerHTML = 
                     `<p style="color: #ff4757;">Error loading pay summary: ${error.message}</p>`;
