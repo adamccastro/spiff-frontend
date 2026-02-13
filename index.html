@@ -578,7 +578,7 @@
             try {
                 const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
                 const displayName = userInfo.display_name || 'Spiff Tracker';
-                const locationName = userInfo.role === 'super_admin' ? 'All Locations' : (userInfo.location_name || '');
+                const locationName = userInfo.role === 'super_admin' ? 'All Rooms' : (userInfo.location_name || '');
                 
                 document.querySelector('.header h1').textContent = '💰 ' + displayName + ' - Admin Dashboard';
                 document.querySelector('.header p').textContent = locationName ? locationName + ' — Manage agents and view payment reports' : 'Manage agents and view payment reports';

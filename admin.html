@@ -739,14 +739,14 @@
                     
                     <!-- Active Agents Tab -->
                     <div id="activeAgentsTab" class="tab-content active">
-                        <!-- Location Filter (Super Admin Only) -->
+                        <!-- Room Filter (Super Admin Only) -->
                         <div id="agentFilterControls" style="display: none; margin-bottom: 15px;">
                             <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                                 <select id="agentLocationFilter" onchange="filterAgents()" style="padding: 8px 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px; width: auto;">
-                                    <option value="">All Locations</option>
+                                    <option value="">All Rooms</option>
                                 </select>
                                 <select id="agentSortOrder" onchange="filterAgents()" style="padding: 8px 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px; width: auto;">
-                                    <option value="location">Sort by Location</option>
+                                    <option value="location">Sort by Room</option>
                                     <option value="name">Sort by Name</option>
                                 </select>
                                 <span id="agentFilterCount" style="color: #666; font-size: 0.9em;"></span>
@@ -773,7 +773,7 @@
                         </div>
 
                         <div class="form-group" id="newAgentLocationGroup" style="display: none;">
-                            <label for="newAgentLocation">Location</label>
+                            <label for="newAgentLocation">Room</label>
                             <select id="newAgentLocation"></select>
                         </div>
                         
@@ -886,23 +886,23 @@
                 </div>
             </div>
             
-            <!-- Location Management (Super Admin Only) -->
+            <!-- Room Management (Super Admin Only) -->
             <div class="card full-width" id="locationManagementSection" style="display: none;">
                 <div class="collapsible-header" onclick="toggleSection('locationManagement')">
-                    <h2>🏢 Location Management</h2>
-                    <button class="collapse-toggle" id="locationManagementCollapseBtn">▼ Show Locations</button>
+                    <h2>🏢 Room Management</h2>
+                    <button class="collapse-toggle" id="locationManagementCollapseBtn">▼ Show Rooms</button>
                 </div>
                 
                 <div class="records-summary" id="locationManagementSummary">
-                    Manage office locations
+                    Manage rooms
                 </div>
                 
                 <div class="collapsible-content" id="locationManagementContent">
-                    <!-- Add Location Form -->
+                    <!-- Add Room Form -->
                     <div class="inline-form">
                         <div class="form-group">
-                            <label for="newLocationName">Location Name</label>
-                            <input type="text" id="newLocationName" placeholder="e.g., Downtown Office">
+                            <label for="newLocationName">Room Name</label>
+                            <input type="text" id="newLocationName" placeholder="e.g., NRM">
                         </div>
                         <div class="form-group">
                             <label for="newLocationAddress">Address (optional)</label>
@@ -912,22 +912,22 @@
                             <label for="newLocationDisplayName">Display Name (optional)</label>
                             <input type="text" id="newLocationDisplayName" placeholder="Custom branding">
                         </div>
-                        <button class="btn-success" onclick="addLocation()">+ Add Location</button>
+                        <button class="btn-success" onclick="addLocation()">+ Add Room</button>
                     </div>
                     
-                    <div id="locationList" class="loading">Loading locations...</div>
+                    <div id="locationList" class="loading">Loading rooms...</div>
                 </div>
             </div>
             
             <!-- Admin Users Management (Super Admin Only) -->
             <div class="card full-width" id="adminUsersSection" style="display: none;">
                 <div class="collapsible-header" onclick="toggleSection('adminUsers')">
-                    <h2>👥 Location Admin Accounts</h2>
+                    <h2>👥 Room Admin Accounts</h2>
                     <button class="collapse-toggle" id="adminUsersCollapseBtn">▼ Show Admins</button>
                 </div>
                 
                 <div class="records-summary" id="adminUsersSummary">
-                    Manage location admin accounts
+                    Manage room admin accounts
                 </div>
                 
                 <div class="collapsible-content" id="adminUsersContent">
@@ -942,7 +942,7 @@
                             <input type="password" id="newAdminPassword" placeholder="min 6 characters">
                         </div>
                         <div class="form-group">
-                            <label for="newAdminLocation">Location</label>
+                            <label for="newAdminLocation">Room</label>
                             <select id="newAdminLocation"></select>
                         </div>
                         <button class="btn-success" onclick="createAdminUser()">+ Create Admin</button>
@@ -957,9 +957,9 @@
     <!-- Move Agent Modal -->
     <div class="modal-overlay" id="moveAgentModal">
         <div class="modal">
-            <h3>📍 Move Agent to Different Location</h3>
+            <h3>📍 Move Agent to Different Room</h3>
             <p id="moveAgentName" style="margin-bottom: 15px; color: #666;"></p>
-            <label for="moveLocationSelect">Select new location:</label>
+            <label for="moveLocationSelect">Select new room:</label>
             <select id="moveLocationSelect"></select>
             <div class="modal-buttons">
                 <button class="modal-cancel" onclick="closeMoveModal()">Cancel</button>
@@ -1026,7 +1026,7 @@
             try {
                 const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
                 const displayName = userInfo.display_name || 'Spiff Tracker';
-                const locationName = userInfo.role === 'super_admin' ? 'All Locations' : (userInfo.location_name || '');
+                const locationName = userInfo.role === 'super_admin' ? 'All Rooms' : (userInfo.location_name || '');
                 
                 document.querySelector('.header h1').textContent = '💰 ' + displayName + ' - Admin Dashboard';
                 document.querySelector('.header p').textContent = locationName ? locationName + ' — Manage agents and view payment reports' : 'Manage agents and view payment reports';
@@ -1203,7 +1203,7 @@
                 document.getElementById('newLocationDisplayName').value = '';
 
                 loadLocations();
-                showAlert('Location added successfully!');
+                showAlert('Room added successfully!');
             } catch (error) {
                 showAlert(error.message, 'error');
             }
@@ -1225,7 +1225,7 @@
                 }
 
                 loadLocations();
-                showAlert('Location deleted successfully');
+                showAlert('Room deleted successfully');
             } catch (error) {
                 showAlert(error.message, 'error');
             }
@@ -1300,7 +1300,7 @@
                 const select = document.getElementById('agentLocationFilter');
                 const currentValue = select.value;
                 
-                select.innerHTML = '<option value="">All Locations</option>' +
+                select.innerHTML = '<option value="">All Rooms</option>' +
                     locations.map(loc => `<option value="${loc.id}">${loc.name}</option>`).join('');
                 
                 if (currentValue && locations.some(l => l.id === currentValue)) {
@@ -1612,7 +1612,7 @@
                     <thead>
                         <tr>
                             <th>Agent</th>
-                            ${isSuperAdmin ? '<th>Location</th>' : ''}
+                            ${isSuperAdmin ? '<th>Room</th>' : ''}
                             <th>Today</th>
                             <th>This Week</th>
                             <th>This Month</th>

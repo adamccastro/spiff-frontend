@@ -284,9 +284,9 @@
                 <div class="header">
                     <div class="icon">💰</div>
                     <h1>Spiff Payment</h1>
-                    <p>Select your location</p>
+                    <p>Select your room</p>
                 </div>
-                <div id="locationList" class="loading">Loading locations...</div>
+                <div id="locationList" class="loading">Loading rooms...</div>
             </div>
 
             <!-- Sign Form (shown when location is set) -->
@@ -472,7 +472,7 @@
                 const locations = await response.json();
                 
                 if (locations.length === 0) {
-                    document.getElementById('locationList').innerHTML = '<p style="color: #999; text-align: center;">No locations available.</p>';
+                    document.getElementById('locationList').innerHTML = '<p style="color: #999; text-align: center;">No rooms available.</p>';
                     return;
                 }
 
@@ -483,7 +483,7 @@
                 
                 document.getElementById('locationList').innerHTML = listHtml;
             } catch (error) {
-                document.getElementById('locationList').innerHTML = '<p style="color: #ff4757;">Error loading locations: ' + error.message + '</p>';
+                document.getElementById('locationList').innerHTML = '<p style="color: #ff4757;">Error loading rooms: ' + error.message + '</p>';
             }
         }
         
