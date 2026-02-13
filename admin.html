@@ -959,20 +959,20 @@
                     <div class="chart-container">
                         <canvas id="paymentChart"></canvas>
                     </div>
+
+                    <!-- Leaderboard -->
+                    <div style="margin-top: 20px; border-top: 2px solid #e5e7eb; padding-top: 20px;">
+                        <h3 style="margin-bottom: 12px; font-size: 1.2em; color: #333;">🏆 Agent Leaderboard</h3>
+                        <div style="display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap;">
+                            <button class="tab-btn active" onclick="switchLeaderboard('today_total', this)" style="font-size: 0.85em; padding: 6px 12px;">Today</button>
+                            <button class="tab-btn" onclick="switchLeaderboard('week_total', this)" style="font-size: 0.85em; padding: 6px 12px;">Week</button>
+                            <button class="tab-btn" onclick="switchLeaderboard('month_total', this)" style="font-size: 0.85em; padding: 6px 12px;">Month</button>
+                            <button class="tab-btn" onclick="switchLeaderboard('year_total', this)" style="font-size: 0.85em; padding: 6px 12px;">Year</button>
+                            <button class="tab-btn" onclick="switchLeaderboard('all_time_total', this)" style="font-size: 0.85em; padding: 6px 12px;">All Time</button>
+                        </div>
+                        <div id="leaderboardBody" style="display: grid; gap: 8px;"></div>
+                    </div>
                 </div>
-            </div>
-            
-            <!-- Agent Leaderboard -->
-            <div class="card full-width">
-                <h2>🏆 Agent Leaderboard</h2>
-                <div style="display: flex; gap: 8px; margin-bottom: 15px; flex-wrap: wrap;">
-                    <button class="tab-btn active" onclick="switchLeaderboard('today_total', this)">Today</button>
-                    <button class="tab-btn" onclick="switchLeaderboard('week_total', this)">This Week</button>
-                    <button class="tab-btn" onclick="switchLeaderboard('month_total', this)">This Month</button>
-                    <button class="tab-btn" onclick="switchLeaderboard('year_total', this)">This Year</button>
-                    <button class="tab-btn" onclick="switchLeaderboard('all_time_total', this)">All Time</button>
-                </div>
-                <div id="leaderboardBody" style="display: grid; gap: 8px;"></div>
             </div>
 
             <!-- Agent Pay Summary -->
@@ -1494,6 +1494,10 @@
             }
             
             displayAgents(filtered);
+
+            // Also filter stats and leaderboard by selected room
+            loadStats();
+            loadPaySummary();
         }
 
         function displayAgents(agents) {
@@ -1725,6 +1729,7 @@
         
         // ==================== LEADERBOARD ====================
         let leaderboardData = [];
+        let allPaySummaryData = [];
         let currentLeaderboardPeriod = 'today_total';
 
         function switchLeaderboard(period, btn) {
@@ -1784,7 +1789,9 @@
                 }
 
                 displayPaySummary(summary);
-                leaderboardData = summary;
+                allPaySummaryData = summary;
+                const locId = getSelectedLocationId();
+                leaderboardData = locId ? summary.filter(a => a.location_id === locId) : summary;
                 renderLeaderboard();
             } catch (error) {
                 document.getElementById('paySummaryTable').innerHTML = 
@@ -1994,9 +2001,15 @@
 
         // ==================== STATISTICS & CHARTS ====================
         
+        function getSelectedLocationId() {
+            return document.getElementById('agentLocationFilter')?.value || '';
+        }
+
         async function loadStats() {
             try {
-                const response = await fetch(`${API_URL}/stats`, {
+                const locId = getSelectedLocationId();
+                const qs = locId ? `?locationId=${locId}` : '';
+                const response = await fetch(`${API_URL}/stats${qs}`, {
                     headers: { 'Authorization': `Bearer ${authToken}` }
                 });
 
