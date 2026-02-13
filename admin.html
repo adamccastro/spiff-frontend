@@ -1178,7 +1178,8 @@
             try {
                 const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
                 const displayName = userInfo.display_name || 'Spiff Tracker';
-                const locationName = userInfo.role === 'super_admin' ? 'All Rooms' : (userInfo.location_name || '');
+                const isMultiLocation = userInfo.location_ids && userInfo.location_ids.length > 1;
+                const locationName = userInfo.role === 'super_admin' ? 'All Rooms' : (isMultiLocation ? userInfo.location_names.map(l => l.name).join(', ') : (userInfo.location_name || ''));
                 
                 document.querySelector('.header h1').textContent = '💰 ' + displayName + ' - Admin Dashboard';
                 document.querySelector('.header p').textContent = locationName ? locationName + ' — Manage agents and view payment reports' : 'Manage agents and view payment reports';
@@ -1186,9 +1187,10 @@
 
                 // Show/hide super admin sections
                 const isSuperAdmin = userInfo.role === 'super_admin';
+                const canSeeMultipleLocations = isSuperAdmin || isMultiLocation;
                 document.getElementById('locationManagementSection').style.display = isSuperAdmin ? 'block' : 'none';
                 document.getElementById('adminUsersSection').style.display = isSuperAdmin ? 'block' : 'none';
-                document.getElementById('newAgentLocationGroup').style.display = isSuperAdmin ? 'block' : 'none';
+                document.getElementById('newAgentLocationGroup').style.display = canSeeMultipleLocations ? 'block' : 'none';
             } catch (e) {
                 console.error('Branding error:', e);
             }
@@ -1291,11 +1293,19 @@
         }
 
         function populateLocationDropdowns() {
+            const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
+            const isMultiLocation = userInfo.location_ids && userInfo.location_ids.length > 1;
+            
+            // Multi-location admins only see their assigned locations
+            const availableLocations = isMultiLocation 
+                ? allLocations.filter(loc => userInfo.location_ids.includes(loc.id))
+                : allLocations;
+            
             const dropdowns = ['newAgentLocation', 'newAdminLocation', 'moveLocationSelect'];
             dropdowns.forEach(id => {
                 const select = document.getElementById(id);
                 if (select) {
-                    select.innerHTML = allLocations.map(loc => 
+                    select.innerHTML = availableLocations.map(loc => 
                         `<option value="${loc.id}">${loc.name}</option>`
                     ).join('');
                 }
@@ -1444,7 +1454,8 @@
             
             const filterControls = document.getElementById('agentFilterControls');
             
-            if (isSuperAdmin && allAgents.length > 0) {
+            const isMultiLocation = userInfo.location_ids && userInfo.location_ids.length > 1;
+            if ((isSuperAdmin || isMultiLocation) && allAgents.length > 0) {
                 filterControls.style.display = 'block';
                 
                 const locations = [...new Set(allAgents.map(a => JSON.stringify({ id: a.location_id, name: a.location_name })))]
@@ -1504,6 +1515,8 @@
             const container = document.getElementById('agentList');
             const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
             const isSuperAdmin = userInfo.role === 'super_admin';
+            const isMultiLocation = userInfo.location_ids && userInfo.location_ids.length > 1;
+            const showLocation = isSuperAdmin || isMultiLocation;
             
             if (agents.length === 0) {
                 container.innerHTML = '<p style="color: #999; text-align: center; padding: 20px;">No agents found</p>';
@@ -1515,7 +1528,7 @@
                     <div class="agent-info">
                         <div class="agent-name">${agent.name}</div>
                         <div class="agent-ssn">${maskSSN(agent.ssn)}</div>
-                        ${isSuperAdmin && agent.location_name ? `<div class="agent-location">📍 ${agent.location_name}</div>` : ''}
+                        ${showLocation && agent.location_name ? `<div class="agent-location">📍 ${agent.location_name}</div>` : ''}
                     </div>
                     <div class="agent-actions">
                         ${isSuperAdmin ? `<button class="move-agent-btn" onclick="openMoveModal('${agent.id}', '${agent.name.replace(/'/g, "\\'")}', '${agent.location_id}')">Move</button>` : ''}
@@ -1530,6 +1543,8 @@
             const container = document.getElementById('archivedAgentList');
             const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
             const isSuperAdmin = userInfo.role === 'super_admin';
+            const isMultiLocation = userInfo.location_ids && userInfo.location_ids.length > 1;
+            const showLocation = isSuperAdmin || isMultiLocation;
             
             if (agents.length === 0) {
                 container.innerHTML = '<p style="color: #999; text-align: center; padding: 20px;">No archived agents</p>';
@@ -1541,7 +1556,7 @@
                     <div class="agent-info">
                         <div class="agent-name">${agent.name}</div>
                         <div class="agent-ssn">${maskSSN(agent.ssn)}</div>
-                        ${isSuperAdmin && agent.location_name ? `<div class="agent-location">📍 ${agent.location_name}</div>` : ''}
+                        ${showLocation && agent.location_name ? `<div class="agent-location">📍 ${agent.location_name}</div>` : ''}
                         <div class="agent-location">Archived: ${new Date(agent.archived_at).toLocaleDateString()}</div>
                     </div>
                     <div class="agent-actions">
@@ -1556,7 +1571,8 @@
             const name = document.getElementById('newAgentName').value.trim();
             const ssn = document.getElementById('newAgentSSN').value.trim();
             const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
-            const locationId = userInfo.role === 'super_admin' ? document.getElementById('newAgentLocation').value : null;
+            const canPickLocation = userInfo.role === 'super_admin' || (userInfo.location_ids && userInfo.location_ids.length > 1);
+            const locationId = canPickLocation ? document.getElementById('newAgentLocation').value : null;
 
             if (!name || !ssn) {
                 showAlert('Please enter agent name and SSN', 'error');
