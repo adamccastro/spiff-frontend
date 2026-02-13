@@ -1110,6 +1110,30 @@
         </div>
     </div>
 
+    <!-- Edit Agent Modal -->
+    <div class="modal-overlay" id="editAgentModal">
+        <div class="modal" style="max-width: 450px;">
+            <h3>✏️ Edit Agent</h3>
+            <div class="form-group">
+                <label for="editAgentName">Full Name</label>
+                <input type="text" id="editAgentName" placeholder="First Last">
+            </div>
+            <div class="form-group">
+                <label for="editAgentSSN">SSN / Tax ID</label>
+                <input type="text" id="editAgentSSN" placeholder="XXX-XX-XXXX" maxlength="11">
+            </div>
+            <div class="form-group">
+                <label for="editAgentAddress">Address</label>
+                <input type="text" id="editAgentAddress" placeholder="123 Main St, City, State ZIP">
+            </div>
+            <input type="hidden" id="editAgentId">
+            <div class="modal-buttons">
+                <button class="modal-cancel" onclick="closeEditAgentModal()">Cancel</button>
+                <button class="modal-confirm" onclick="saveAgentEdit()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Move Agent Modal -->
     <div class="modal-overlay" id="moveAgentModal">
         <div class="modal">
@@ -1402,7 +1426,7 @@
         // ==================== AGENTS ====================
         
         // Format SSN as user types
-        document.getElementById('newAgentSSN').addEventListener('input', function(e) {
+        function formatSSNInput(e) {
             let value = e.target.value.replace(/\D/g, '');
             if (value.length > 3 && value.length <= 5) {
                 value = value.slice(0, 3) + '-' + value.slice(3);
@@ -1410,7 +1434,9 @@
                 value = value.slice(0, 3) + '-' + value.slice(3, 5) + '-' + value.slice(5, 9);
             }
             e.target.value = value;
-        });
+        }
+        document.getElementById('newAgentSSN').addEventListener('input', formatSSNInput);
+        document.getElementById('editAgentSSN').addEventListener('input', formatSSNInput);
 
         async function loadAgents() {
             try {
@@ -1536,7 +1562,7 @@
                         ${showLocation && agent.location_name ? `<div class="agent-location">📍 ${agent.location_name}</div>` : ''}
                     </div>
                     <div class="agent-actions">
-                        <button class="move-agent-btn" onclick="editAgentAddress('${agent.id}', '${(agent.address || '').replace(/'/g, "\\'")}')">📝 Address</button>
+                        <button class="move-agent-btn" onclick="openEditAgentModal('${agent.id}')">✏️ Edit</button>
                         ${isSuperAdmin ? `<button class="move-agent-btn" onclick="openMoveModal('${agent.id}', '${agent.name.replace(/'/g, "\\'")}', '${agent.location_id}')">Move</button>` : ''}
                         <button class="archive-agent-btn" onclick="archiveAgent('${agent.id}')">Archive</button>
                         <button class="delete-agent-btn" onclick="deleteAgent('${agent.id}')">Delete</button>
@@ -1631,9 +1657,29 @@
             }
         }
 
-        async function editAgentAddress(id, currentAddress) {
-            const newAddress = prompt('Enter agent address (for tax records):', currentAddress || '');
-            if (newAddress === null) return; // cancelled
+        function openEditAgentModal(id) {
+            const agent = allAgents.find(a => a.id === id);
+            if (!agent) return;
+
+            document.getElementById('editAgentId').value = id;
+            document.getElementById('editAgentName').value = agent.name || '';
+            document.getElementById('editAgentSSN').value = agent.ssn || '';
+            document.getElementById('editAgentAddress').value = agent.address || '';
+            document.getElementById('editAgentModal').classList.add('active');
+        }
+
+        function closeEditAgentModal() {
+            document.getElementById('editAgentModal').classList.remove('active');
+        }
+
+        async function saveAgentEdit() {
+            const id = document.getElementById('editAgentId').value;
+            const name = document.getElementById('editAgentName').value.trim();
+            const ssn = document.getElementById('editAgentSSN').value.trim();
+            const address = document.getElementById('editAgentAddress').value.trim();
+
+            if (!name) { showAlert('Name is required', 'error'); return; }
+            if (!ssn) { showAlert('SSN is required', 'error'); return; }
 
             try {
                 const response = await fetch(`${API_URL}/agents/${id}`, {
@@ -1642,15 +1688,16 @@
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${authToken}`
                     },
-                    body: JSON.stringify({ address: newAddress })
+                    body: JSON.stringify({ name, ssn, address })
                 });
 
+                const data = await response.json();
                 if (!response.ok) {
-                    const data = await response.json();
-                    throw new Error(data.error || 'Failed to update address');
+                    throw new Error(data.error || 'Failed to update agent');
                 }
 
-                showAlert('Address updated!');
+                showAlert('Agent updated!');
+                closeEditAgentModal();
                 loadAgents();
             } catch (error) {
                 showAlert(error.message, 'error');
