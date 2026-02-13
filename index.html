@@ -13,8 +13,12 @@
         
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #f0f2f5;
             min-height: 100vh;
+            padding: 0;
+        }
+        
+        body.logged-in {
             padding: 20px;
         }
         
@@ -24,10 +28,10 @@
         }
         
         .header {
-            background: white;
+            background: linear-gradient(135deg, #1e1e2d 0%, #2a2a3c 100%);
             padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
             margin-bottom: 30px;
             display: flex;
             justify-content: space-between;
@@ -35,12 +39,12 @@
         }
         
         .header h1 {
-            color: #333;
+            color: #fff;
             margin-bottom: 5px;
         }
         
         .header p {
-            color: #666;
+            color: #9ca3af;
         }
         
         .main-content {
@@ -315,40 +319,76 @@
         }
 
         .stat-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             padding: 20px;
-            border-radius: 8px;
-            text-align: center;
+            border-radius: 12px;
+            text-align: left;
         }
 
+        .stat-card:nth-child(1) { background: linear-gradient(135deg, #3b82f6, #2563eb); box-shadow: 0 4px 15px rgba(59,130,246,0.3); }
+        .stat-card:nth-child(2) { background: linear-gradient(135deg, #10b981, #059669); box-shadow: 0 4px 15px rgba(16,185,129,0.3); }
+        .stat-card:nth-child(3) { background: linear-gradient(135deg, #f59e0b, #d97706); box-shadow: 0 4px 15px rgba(245,158,11,0.3); }
+        .stat-card:nth-child(4) { background: linear-gradient(135deg, #8b5cf6, #7c3aed); box-shadow: 0 4px 15px rgba(139,92,246,0.3); }
+
         .stat-card h4 {
-            font-size: 0.9em;
+            font-size: 0.85em;
             margin-bottom: 8px;
-            opacity: 0.9;
+            opacity: 0.85;
         }
 
         .stat-card .value {
-            font-size: 2em;
-            font-weight: bold;
+            font-size: 2.2em;
+            font-weight: 800;
         }
 
         .login-container {
-            max-width: 400px;
-            margin: 100px auto;
+            display: flex;
+            min-height: 100vh;
+            width: 100%;
         }
+
+        .login-branding {
+            display: none;
+            width: 50%;
+            background: linear-gradient(135deg, #1e1e2d 0%, #2a2a3c 100%);
+            padding: 60px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        @media (min-width: 768px) {
+            .login-branding { display: flex; }
+        }
+
+        .login-branding-content h1 { font-size: 2.5em; font-weight: 800; color: white; margin-bottom: 15px; }
+        .login-branding-content p { color: #9ca3af; font-size: 1.1em; line-height: 1.6; }
+        .login-feature { display: flex; align-items: center; gap: 12px; margin-top: 20px; }
+        .login-feature-icon { width: 40px; height: 40px; background: rgba(99,102,241,0.2); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.2em; }
+        .login-feature-text h4 { color: #e5e7eb; font-size: 0.9em; margin-bottom: 2px; }
+        .login-feature-text p { color: #6b7280; font-size: 0.8em; }
+        .login-form-side { flex: 1; display: flex; align-items: center; justify-content: center; padding: 40px; background: #f9fafb; }
 
         .login-card {
             background: white;
             padding: 40px;
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            width: 100%;
+            max-width: 400px;
+            border: 1px solid #e5e7eb;
         }
 
         .login-card h2 {
-            text-align: center;
+            text-align: left;
+            margin-bottom: 8px;
+            color: #111;
+            font-size: 1.5em;
+        }
+
+        .login-subtitle {
+            color: #6b7280;
+            font-size: 0.9em;
             margin-bottom: 30px;
-            color: #333;
         }
 
         .full-width {
@@ -389,18 +429,38 @@
 </head>
 <body>
     <div id="loginScreen" class="login-container">
+        <div class="login-branding">
+            <div class="login-branding-content">
+                <h1>Spiff Tracker</h1>
+                <p>Track and manage agent spiff payments across all your rooms in one place.</p>
+                <div class="login-feature">
+                    <div class="login-feature-icon">💰</div>
+                    <div class="login-feature-text"><h4>Payment Tracking</h4><p>Record and monitor spiff payments in real-time</p></div>
+                </div>
+                <div class="login-feature">
+                    <div class="login-feature-icon">📊</div>
+                    <div class="login-feature-text"><h4>Multi-Room Management</h4><p>Manage agents across all your rooms</p></div>
+                </div>
+                <div class="login-feature">
+                    <div class="login-feature-icon">📄</div>
+                    <div class="login-feature-text"><h4>Export & Reports</h4><p>Export payment records to CSV anytime</p></div>
+                </div>
+            </div>
+        </div>
+        <div class="login-form-side">
         <div class="login-card">
             <h2>🔐 Admin Login</h2>
             <div id="loginAlert" class="alert"></div>
             <div class="form-group">
                 <label for="username">Username</label>
-                <input type="text" id="username" placeholder="Enter username" value="admin">
+                <input type="text" id="username" placeholder="Enter username">
             </div>
             <div class="form-group">
                 <label for="password">Password</label>
                 <input type="password" id="password" placeholder="Enter password">
             </div>
-            <button class="btn-primary" onclick="login()">Login</button>
+            <button class="btn-primary" onclick="login()">Sign In</button>
+        </div>
         </div>
     </div>
 
@@ -589,13 +649,15 @@
         }
 
         function showLogin() {
-            document.getElementById('loginScreen').style.display = 'block';
+            document.getElementById('loginScreen').style.display = 'flex';
             document.getElementById('adminDashboard').style.display = 'none';
+            document.body.classList.remove('logged-in');
         }
 
         function showDashboard() {
             document.getElementById('loginScreen').style.display = 'none';
             document.getElementById('adminDashboard').style.display = 'block';
+            document.body.classList.add('logged-in');
         }
 
         async function changePassword() {
