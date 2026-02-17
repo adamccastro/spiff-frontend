@@ -1159,6 +1159,40 @@
         let paymentChart = null;
 
         // ==================== AUTHENTICATION ====================
+
+        // Auto-refresh wrapper for authenticated API calls
+        async function authFetch(url, options = {}) {
+            if (!options.headers) options.headers = {};
+            options.headers['Authorization'] = `Bearer ${authToken}`;
+            
+            let response = await fetch(url, options);
+            
+            if (response.status === 401) {
+                try {
+                    const refreshResp = await fetch(`${API_URL}/auth/refresh`, {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${authToken}` }
+                    });
+                    if (refreshResp.ok) {
+                        const data = await refreshResp.json();
+                        authToken = data.token;
+                        currentUser = data.user;
+                        localStorage.setItem('authToken', authToken);
+                        localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                        options.headers['Authorization'] = `Bearer ${authToken}`;
+                        response = await fetch(url, options);
+                    } else {
+                        logout();
+                        throw new Error('Session expired. Please login again.');
+                    }
+                } catch (e) {
+                    if (e.message === 'Session expired. Please login again.') throw e;
+                    logout();
+                    throw new Error('Session expired. Please login again.');
+                }
+            }
+            return response;
+        }
         
         async function login() {
             const username = document.getElementById('username').value.trim();
@@ -1249,11 +1283,10 @@
             }
 
             try {
-                const response = await fetch(`${API_URL}/auth/change-password`, {
+                const response = await authFetch(`${API_URL}/auth/change-password`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${authToken}`
                     },
                     body: JSON.stringify({ currentPassword, newPassword })
                 });
@@ -1375,11 +1408,10 @@
             }
 
             try {
-                const response = await fetch(`${API_URL}/locations`, {
+                const response = await authFetch(`${API_URL}/locations`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${authToken}`
                     },
                     body: JSON.stringify({ name, address, displayName })
                 });
@@ -1405,9 +1437,8 @@
             if (!confirm(`Delete location "${name}"?\n\nThis will only work if no agents are assigned to this location.`)) return;
 
             try {
-                const response = await fetch(`${API_URL}/locations/${id}`, {
+                const response = await authFetch(`${API_URL}/locations/${id}`, {
                     method: 'DELETE',
-                    headers: { 'Authorization': `Bearer ${authToken}` }
                 });
 
                 const data = await response.json();
@@ -1440,8 +1471,7 @@
 
         async function loadAgents() {
             try {
-                const response = await fetch(`${API_URL}/agents/admin`, {
-                    headers: { 'Authorization': `Bearer ${authToken}` }
+                const response = await authFetch(`${API_URL}/agents/admin`, {
                 });
 
                 const agents = await response.json();
@@ -1461,8 +1491,7 @@
 
         async function loadArchivedAgents() {
             try {
-                const response = await fetch(`${API_URL}/agents/archived`, {
-                    headers: { 'Authorization': `Bearer ${authToken}` }
+                const response = await authFetch(`${API_URL}/agents/archived`, {
                 });
 
                 const agents = await response.json();
@@ -1616,11 +1645,10 @@
                 const body = { name, ssn, address, force };
                 if (locationId) body.locationId = locationId;
 
-                const response = await fetch(`${API_URL}/agents`, {
+                const response = await authFetch(`${API_URL}/agents`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${authToken}`
                     },
                     body: JSON.stringify(body)
                 });
@@ -1682,11 +1710,10 @@
             if (!ssn) { showAlert('SSN is required', 'error'); return; }
 
             try {
-                const response = await fetch(`${API_URL}/agents/${id}`, {
+                const response = await authFetch(`${API_URL}/agents/${id}`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${authToken}`
                     },
                     body: JSON.stringify({ name, ssn, address })
                 });
@@ -1708,9 +1735,8 @@
             if (!confirm('Archive this agent? They can be restored later.')) return;
 
             try {
-                const response = await fetch(`${API_URL}/agents/${id}/archive`, {
+                const response = await authFetch(`${API_URL}/agents/${id}/archive`, {
                     method: 'PUT',
-                    headers: { 'Authorization': `Bearer ${authToken}` }
                 });
 
                 const data = await response.json();
@@ -1729,9 +1755,8 @@
 
         async function restoreAgent(id) {
             try {
-                const response = await fetch(`${API_URL}/agents/${id}/restore`, {
+                const response = await authFetch(`${API_URL}/agents/${id}/restore`, {
                     method: 'PUT',
-                    headers: { 'Authorization': `Bearer ${authToken}` }
                 });
 
                 const data = await response.json();
@@ -1753,9 +1778,8 @@
             if (!confirm('⚠️ PERMANENTLY DELETE this agent?\n\nThis cannot be undone.')) return;
 
             try {
-                const response = await fetch(`${API_URL}/agents/${id}`, {
+                const response = await authFetch(`${API_URL}/agents/${id}`, {
                     method: 'DELETE',
-                    headers: { 'Authorization': `Bearer ${authToken}` }
                 });
 
                 const data = await response.json();
@@ -1799,10 +1823,9 @@
             const newLocationId = document.getElementById('moveLocationSelect').value;
             
             try {
-                const response = await fetch(`${API_URL}/agents/${moveAgentId}/location`, {
+                const response = await authFetch(`${API_URL}/agents/${moveAgentId}/location`, {
                     method: 'PUT',
                     headers: {
-                        'Authorization': `Bearer ${authToken}`,
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({ locationId: newLocationId })
@@ -1875,8 +1898,7 @@
 
         async function loadPaySummary() {
             try {
-                const response = await fetch(`${API_URL}/agents/pay-summary`, {
-                    headers: { 'Authorization': `Bearer ${authToken}` }
+                const response = await authFetch(`${API_URL}/agents/pay-summary`, {
                 });
 
                 const summary = await response.json();
@@ -1961,8 +1983,7 @@
         
         async function loadPayments() {
             try {
-                const response = await fetch(`${API_URL}/payments`, {
-                    headers: { 'Authorization': `Bearer ${authToken}` }
+                const response = await authFetch(`${API_URL}/payments`, {
                 });
 
                 const payments = await response.json();
@@ -2030,9 +2051,8 @@
             if (!confirm('Delete this payment record?')) return;
 
             try {
-                const response = await fetch(`${API_URL}/payments/${id}`, {
+                const response = await authFetch(`${API_URL}/payments/${id}`, {
                     method: 'DELETE',
-                    headers: { 'Authorization': `Bearer ${authToken}` }
                 });
 
                 const data = await response.json();
@@ -2054,9 +2074,8 @@
             if (!confirm('Delete ALL payment records? This cannot be undone!')) return;
 
             try {
-                const response = await fetch(`${API_URL}/payments`, {
+                const response = await authFetch(`${API_URL}/payments`, {
                     method: 'DELETE',
-                    headers: { 'Authorization': `Bearer ${authToken}` }
                 });
 
                 const data = await response.json();
@@ -2107,8 +2126,7 @@
             try {
                 const locId = getSelectedLocationId();
                 const qs = locId ? `?locationId=${locId}` : '';
-                const response = await fetch(`${API_URL}/stats${qs}`, {
-                    headers: { 'Authorization': `Bearer ${authToken}` }
+                const response = await authFetch(`${API_URL}/stats${qs}`, {
                 });
 
                 const stats = await response.json();
@@ -2200,8 +2218,7 @@
                 const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
                 if (userInfo.role !== 'super_admin') return;
 
-                const response = await fetch(`${API_URL}/admin/users`, {
-                    headers: { 'Authorization': `Bearer ${authToken}` }
+                const response = await authFetch(`${API_URL}/admin/users`, {
                 });
 
                 const users = await response.json();
@@ -2257,11 +2274,10 @@
             }
 
             try {
-                const response = await fetch(`${API_URL}/admin/users`, {
+                const response = await authFetch(`${API_URL}/admin/users`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${authToken}`
                     },
                     body: JSON.stringify({ username, password, locationId })
                 });
@@ -2292,11 +2308,10 @@
             }
 
             try {
-                const response = await fetch(`${API_URL}/admin/users/${userId}/reset-password`, {
+                const response = await authFetch(`${API_URL}/admin/users/${userId}/reset-password`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${authToken}`
                     },
                     body: JSON.stringify({ newPassword })
                 });
