@@ -1178,7 +1178,7 @@
                         authToken = data.token;
                         currentUser = data.user;
                         localStorage.setItem('authToken', authToken);
-                        localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                        localStorage.setItem('userInfo', JSON.stringify(data.user));
                         options.headers['Authorization'] = `Bearer ${authToken}`;
                         response = await fetch(url, options);
                     } else {
